@@ -1,0 +1,6 @@
+arxiv
+h5py
+sentence-transformers
+numpy
+scikit-learn
+torch
