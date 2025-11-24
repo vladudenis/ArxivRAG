@@ -2,7 +2,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 
 class PaperEmbedder:
-    def __init__(self, model_name="google/embedding-gemma-300m"):
+    def __init__(self, model_name="google/embeddinggemma-300m"):
         """
         Initializes the embedder with the specified model.
         """
