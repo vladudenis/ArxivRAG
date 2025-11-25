@@ -15,16 +15,12 @@ def download_papers(query="cat:cs.AI OR cat:cs.ML", year=2025, limit=100):
     """
     client = arxiv.Client()
     
-    # Construct a search query that includes the date range for the specified year
     # arXiv date format: YYYYMMDDHHMM
     start_date = f"{year}01010000"
     end_date = f"{year}12312359"
     
     # Note: arXiv API query syntax for date is 'submittedDate:[start TO end]'
-    # However, mixing 'cat' and 'submittedDate' can be tricky with the python wrapper's sort order.
-    # We will fetch a bit more and filter client-side to be safe and simple, 
-    # but we can try to optimize the query.
-    # Let's try to just search for the categories and sort by submitted date descending.
+    # Try to just search for the categories and sort by submitted date descending.
     
     search = arxiv.Search(
         query=query,
@@ -51,11 +47,6 @@ def download_papers(query="cat:cs.AI OR cat:cs.ML", year=2025, limit=100):
             if len(results) >= limit:
                 break
         elif result.published.year < year:
-            # Since we sort by descending date, if we hit a paper from before the target year,
-            # we can stop (assuming strictly sorted).
-            # But sometimes there are updates, so we'll just continue until we have enough or run out.
-            # Actually, 'published' is the initial publish date. 'updated' is update date.
-            # We'll stick to 'published.year == year'.
             pass
             
     print(f"Found {len(results)} papers from {year}.")
