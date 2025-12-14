@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: arxiv-dynamodb
+    ports:
+      - "8001:8000"
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal"
+    volumes:
+      - dynamodb_data:/home/dynamodblocal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arxiv-network
+
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin
+    container_name: arxiv-dynamodb-admin
+    ports:
+      - "8002:8001"
+    environment:
+      - DYNAMO_ENDPOINT=http://dynamodb:8000
+    depends_on:
+      - dynamodb
+    networks:
+      - arxiv-network
+
+  minio:
+    image: minio/minio
+    container_name: arxiv-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arxiv-network
+
+  vllm:
+    image: vllm/vllm-openai:v0.5.5  # Better GPU compatibility
+    container_name: arxiv-vllm
+    ports:
+      - "8000:8000"
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - huggingface_cache:/root/.cache/huggingface
+    command: >
+      --model TinyLlama/TinyLlama-1.1B-Chat-v1.0
+      --host 0.0.0.0
+      --port 8000
+      --enforce-eager
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - arxiv-network
+    restart: unless-stopped
+
+volumes:
+  dynamodb_data:
+  minio_data:
+  huggingface_cache:
+
+networks:
+  arxiv-network:
+    driver: bridge

@@ -1,59 +1,90 @@
 import arxiv
-from datetime import datetime, timezone
+import requests
+import time
+from src.storage_manager import StorageManager
+
+def download_pdf(url):
+    """Downloads PDF content from a URL."""
+    try:
+        # Arxiv PDF links often need 'pdf' instead of 'abs' and .pdf extension logic 
+        # But the API returns direct PDF link usually.
+        # It's good practice to identify as a browser or specific client
+        response = requests.get(url, headers={'User-Agent': 'ArxivRAG-Experiment/1.0'})
+        if response.status_code == 200:
+            return response.content
+        else:
+            print(f"Failed to download PDF from {url}: Status {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"Error downloading PDF from {url}: {e}")
+        return None
 
 def download_papers(query="cat:cs.AI OR cat:cs.ML", year=2025, limit=100):
     """
-    Downloads metadata for papers from arXiv matching the query and year.
-    
-    Args:
-        query (str): The search query for arXiv.
-        year (int): The year to filter papers by.
-        limit (int): The maximum number of papers to return.
-        
-    Returns:
-        list[dict]: A list of dictionaries containing paper metadata.
+    Downloads metadata and PDFs from arXiv, saving them to storage.
     """
+    # Initialize storage
+    storage = StorageManager()
+    storage.init_db()
+    storage.init_bucket()
+    
     client = arxiv.Client()
-    
-    # arXiv date format: YYYYMMDDHHMM
-    start_date = f"{year}01010000"
-    end_date = f"{year}12312359"
-    
-    # Note: arXiv API query syntax for date is 'submittedDate:[start TO end]'
-    # Try to just search for the categories and sort by submitted date descending.
     
     search = arxiv.Search(
         query=query,
-        max_results=limit * 2, # Fetch more to allow for filtering if needed
+        max_results=limit * 2, 
         sort_by=arxiv.SortCriterion.SubmittedDate,
         sort_order=arxiv.SortOrder.Descending
     )
     
     results = []
+    count = 0
     
     print(f"Searching arXiv for {query}...")
     
     for result in client.results(search):
         if result.published.year == year:
+            paper_id = result.entry_id.split('/')[-1]
+            
+            # Check if likely already exists (optional optimization, but let's overwrite/update)
+            
             paper_info = {
-                "id": result.entry_id,
+                "id": paper_id,
                 "title": result.title,
                 "abstract": result.summary,
                 "authors": [author.name for author in result.authors],
                 "published": result.published.isoformat(),
-                "url": result.pdf_url
+                "url": result.pdf_url,
+                "categories": result.categories # Store categories too
             }
-            results.append(paper_info)
-            if len(results) >= limit:
-                break
+            
+            print(f"Processing: {result.title[:50]}...")
+            
+            # Download PDF
+            pdf_bytes = download_pdf(result.pdf_url)
+            if pdf_bytes:
+                # Save to Storage
+                storage.save_paper_metadata(paper_info)
+                storage.save_paper_pdf(paper_id, pdf_bytes)
+                
+                results.append(paper_info)
+                count += 1
+                if count >= limit:
+                    break
+                
+                # Be nice to arXiv API
+                time.sleep(0.5)
+            else:
+                print(f"Skipping {paper_id} due to PDF download failure.")
+                
         elif result.published.year < year:
+            # Sorted by date descending, so we can stop if we hit older years?
+            # Not necessarily if mixed results, but usually yes.
+            # But let's just pass to be safe if query mixes things.
             pass
             
-    print(f"Found {len(results)} papers from {year}.")
+    print(f"Successfully downloaded and stored {len(results)} papers.")
     return results
 
 if __name__ == "__main__":
-    # Test run
-    papers = download_papers(limit=5)
-    for p in papers:
-        print(f"[{p['published']}] {p['title']}")
+    download_papers(limit=5)

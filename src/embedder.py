@@ -1,5 +1,6 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
+import os
 
 class PaperEmbedder:
     def __init__(self, model_name="google/embeddinggemma-300m"):
@@ -11,7 +12,8 @@ class PaperEmbedder:
         # Usually sentence-transformers handles it well.
         # If this fails, we might need to use transformers directly.
         try:
-            self.model = SentenceTransformer(model_name, trust_remote_code=True)
+            token = os.getenv("HF_TOKEN")
+            self.model = SentenceTransformer(model_name, trust_remote_code=True, token=token)
         except Exception as e:
             print(f"Failed to load with SentenceTransformer: {e}")
             print("Falling back to transformers (not implemented in this snippet, assuming ST works or user has it).")

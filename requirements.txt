@@ -5,3 +5,12 @@ numpy
 scikit-learn
 torch
 python-dotenv
+boto3
+pymupdf
+requests
+tiktoken
+nltk
+rouge-score
+sacrebleu
+bert-score
+openai
