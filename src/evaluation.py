@@ -177,7 +177,21 @@ class Evaluator:
         chunk_size: int,
         chunk_overlap: int
     ):
-        """Chunk and embed all papers."""
+        """Chunk and embed all papers, utilizing Qdrant for persistence."""
+        
+        # 1. Try to fetch from Qdrant
+        print(f"Checking storage for strategy: {strategy}...")
+        vectors, payloads = self.storage.fetch_embeddings(strategy)
+        
+        if vectors:
+            print(f"Found {len(vectors)} chunks in storage.")
+            # Unpack payloads
+            all_chunks = [p['chunk_text'] for p in payloads]
+            doc_indices = [p['paper_id'] for p in payloads]
+            chunk_embeddings = np.array(vectors)
+            return all_chunks, doc_indices, chunk_embeddings
+            
+        # 2. If not found, generate valid chunks
         chunker = Chunker(strategy=strategy, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         
         all_chunks = []
@@ -199,9 +213,27 @@ class Evaluator:
                 all_chunks.append(chunk)
                 doc_indices.append(paper['id'])
         
+        if not all_chunks:
+            return [], [], []
+
         print(f"Generated {len(all_chunks)} chunks")
         print(f"Embedding chunks...")
         chunk_embeddings = self.embedder.embed_texts(all_chunks)
+        
+        # 3. Save to Qdrant
+        print("Saving chunks and embeddings to storage...")
+        payloads = [
+            {
+                "strategy": strategy, 
+                "paper_id": doc_id, 
+                "chunk_text": chunk,
+                "chunk_size": chunk_size,
+                "chunk_overlap": chunk_overlap
+            }
+            for chunk, doc_id in zip(all_chunks, doc_indices)
+        ]
+        
+        self.storage.save_embeddings(chunk_embeddings, payloads)
         
         return all_chunks, doc_indices, chunk_embeddings
     

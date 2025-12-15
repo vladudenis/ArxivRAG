@@ -49,6 +49,16 @@ services:
     networks:
       - arxiv-network
 
+  qdrant:
+    image: qdrant/qdrant
+    container_name: arxiv-qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - arxiv-network
+
   vllm:
     image: vllm/vllm-openai:v0.5.5  # Better GPU compatibility
     container_name: arxiv-vllm
@@ -59,7 +69,7 @@ services:
     volumes:
       - huggingface_cache:/root/.cache/huggingface
     command: >
-      --model TinyLlama/TinyLlama-1.1B-Chat-v1.0
+      --model ${VLLM_MODEL:-TinyLlama/TinyLlama-1.1B-Chat-v1.0}
       --host 0.0.0.0
       --port 8000
       --enforce-eager
@@ -78,6 +88,7 @@ volumes:
   dynamodb_data:
   minio_data:
   huggingface_cache:
+  qdrant_data:
 
 networks:
   arxiv-network:

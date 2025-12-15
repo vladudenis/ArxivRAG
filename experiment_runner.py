@@ -21,6 +21,7 @@ def main():
     
     print("Initialize Storage and Embedder...")
     storage = StorageManager()
+    storage.init_qdrant()
 
     papers = []
 
@@ -29,6 +30,7 @@ def main():
         print("\n--- Phase 1: Cleaning Storage ---")
         storage.reset_db()
         storage.reset_bucket()
+        storage.reset_qdrant()
         
         # 2. Download Data
         print("\n--- Phase 2: Downloading Data ---")
@@ -71,24 +73,19 @@ def main():
     
     # 6. Define Strategies
     strategies = [
-        # Character-based strategies
+        # Character-based
         {"name": "Fixed-500", "strategy": "fixed", "chunk_size": 500, "overlap": 50},
-        {"name": "Fixed-1000", "strategy": "fixed", "chunk_size": 1000, "overlap": 100},
         
-        # Recursive strategies
+        # Recursive
         {"name": "Recursive-500", "strategy": "recursive", "chunk_size": 500, "overlap": 50},
-        {"name": "Recursive-1000", "strategy": "recursive", "chunk_size": 1000, "overlap": 100},
         
-        # Token-based strategies
+        # Token-based
         {"name": "Token-256", "strategy": "token", "chunk_size": 256, "overlap": 32},
-        {"name": "Token-512", "strategy": "token", "chunk_size": 512, "overlap": 64},
         
-        # Sentence-based strategies
+        # Sentence-based
         {"name": "Sentence-500", "strategy": "sentence", "chunk_size": 500, "overlap": 100},
-        {"name": "Sentence-1000", "strategy": "sentence", "chunk_size": 1000, "overlap": 200},
         
         # Paragraph-based
-        {"name": "Paragraph", "strategy": "paragraph", "chunk_size": 0, "overlap": 0},
         {"name": "Paragraph-Overlap", "strategy": "paragraph", "chunk_size": 0, "overlap": 100}
     ]
     

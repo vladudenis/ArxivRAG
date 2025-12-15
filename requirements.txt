@@ -14,3 +14,4 @@ rouge-score
 sacrebleu
 bert-score
 openai
+qdrant-client
