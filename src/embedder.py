@@ -8,9 +8,6 @@ class PaperEmbedder:
         Initializes the embedder with the specified model.
         """
         print(f"Loading model {model_name}...")
-        # Trust remote code might be needed for some new models, but let's try without first or check docs.
-        # Usually sentence-transformers handles it well.
-        # If this fails, we might need to use transformers directly.
         try:
             token = os.getenv("HF_TOKEN")
             self.model = SentenceTransformer(model_name, trust_remote_code=True, token=token)

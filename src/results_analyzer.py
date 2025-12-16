@@ -200,8 +200,19 @@ class ResultsAnalyzer:
         
         return best_strategy
     
+    class NumpyEncoder(json.JSONEncoder):
+        def default(self, obj):
+            import numpy as np
+            if isinstance(obj, np.integer):
+                return int(obj)
+            if isinstance(obj, np.floating):
+                return float(obj)
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return super(ResultsAnalyzer.NumpyEncoder, self).default(obj)
+
     def save_json(self, output_path: str = "experiment_results.json"):
         """Save results as JSON."""
         with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(self.results, f, indent=2)
+            json.dump(self.results, f, indent=2, cls=self.NumpyEncoder)
         print(f"JSON results saved to {output_path}")

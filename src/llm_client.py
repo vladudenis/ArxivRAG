@@ -126,6 +126,14 @@ class VLLMClient:
         # Build context from chunks
         context = "\n\n".join([f"[{i+1}] {chunk}" for i, chunk in enumerate(chunks)])
         
+        # Truncate context if too long (approx 3 chars per token)
+        # Model limit is usually 2048, leave 512 for generation -> ~1500 for prompt
+        # Approx 4500 chars.
+        MAX_CONTEXT_CHARS = 6000 # aggressive truncation to be safe
+        if len(context) > MAX_CONTEXT_CHARS:
+             print(f"Warning: Context too long ({len(context)} chars), truncating to {MAX_CONTEXT_CHARS}...")
+             context = context[:MAX_CONTEXT_CHARS] + "...(truncated)"
+        
         # Create prompt
         prompt = self._build_rag_prompt(query, context)
         

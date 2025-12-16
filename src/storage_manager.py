@@ -180,19 +180,9 @@ class StorageManager:
             batch_vectors = vectors[i:end]
             batch_payloads = payloads[i:end]
             
-            # Generate IDs (using UUIDs or let Qdrant generate? Qdrant accepts UUIDs or integers)
-            # We can let Qdrant generate UUIDs if we don't provide IDs, 
-            # but providing deterministic IDs based on content/metadata is often better for idempotency.
-            # For simplicity here, we'll let Qdrant generate them (ids=None in upsert normally requires ids).
-            # Qdrant client's `upsert` needs points. `add` method is higher level.
-            
             points = [
                 models.PointStruct(
-                    id=i + idx, # distinct integer IDs for this batch/session? 
-                               # If we reset every time, integers are fine.
-                               # But `i+idx` is just 0..N. If we assume fresh collection, this works.
-                               # Better to use a hash of the payload or something if we want persistence across runs without duplicates.
-                               # Given the user wants PERSISTENCE, we should use deterministic IDs.
+                    id=i + idx,
                     vector=v.tolist() if hasattr(v, 'tolist') else v,
                     payload=p
                 )

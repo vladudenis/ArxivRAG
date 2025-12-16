@@ -62,8 +62,6 @@ docker-compose ps
 docker-compose logs -f vllm
 ```
 
-**Note**: First startup will download the Llama-2-7b model (~13GB). This may take 10-30 minutes depending on your internet connection.
-
 ## Usage
 
 ### Run Full Evaluation

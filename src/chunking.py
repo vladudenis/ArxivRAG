@@ -219,6 +219,13 @@ class Chunker:
         """
         paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
         
+        # If we only got 1 giant chunk (likely no \n\n found), try splitting by single \n
+        if len(paragraphs) <= 1 and len(text) > 1000:
+             paragraphs = [p.strip() for p in text.split('\n') if p.strip()]
+             
+        # If still too big, force split? 
+        # For now, let's just rely on the LLM client truncation we added to save from crashing.
+        
         if self.chunk_overlap == 0:
             return paragraphs
         

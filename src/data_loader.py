@@ -8,7 +8,6 @@ def download_pdf(url):
     try:
         # Arxiv PDF links often need 'pdf' instead of 'abs' and .pdf extension logic 
         # But the API returns direct PDF link usually.
-        # It's good practice to identify as a browser or specific client
         response = requests.get(url, headers={'User-Agent': 'ArxivRAG-Experiment/1.0'})
         if response.status_code == 200:
             return response.content
@@ -46,7 +45,7 @@ def download_papers(query="cat:cs.AI OR cat:cs.ML", year=2025, limit=100):
         if result.published.year == year:
             paper_id = result.entry_id.split('/')[-1]
             
-            # Check if likely already exists (optional optimization, but let's overwrite/update)
+            # Check if likely already exists
             
             paper_info = {
                 "id": paper_id,
@@ -78,9 +77,7 @@ def download_papers(query="cat:cs.AI OR cat:cs.ML", year=2025, limit=100):
                 print(f"Skipping {paper_id} due to PDF download failure.")
                 
         elif result.published.year < year:
-            # Sorted by date descending, so we can stop if we hit older years?
-            # Not necessarily if mixed results, but usually yes.
-            # But let's just pass to be safe if query mixes things.
+            # Sorted by date descending
             pass
             
     print(f"Successfully downloaded and stored {len(results)} papers.")
