@@ -142,16 +142,25 @@ class StorageManager:
         except ClientError as e:
             print(f"Error clearing bucket: {e}")
 
-    def init_qdrant(self):
-        """Creates Qdrant collection if it doesn't exist."""
+    def init_qdrant(self, vector_size=768):
+        """
+        Creates Qdrant collection if it doesn't exist.
+        
+        Args:
+            vector_size: Dimension of embedding vectors (default: 768)
+        """
         try:
-            self.qdrant.get_collection(self.qdrant_collection)
+            collection_info = self.qdrant.get_collection(self.qdrant_collection)
             print(f"Collection {self.qdrant_collection} already exists.")
+            # Check if vector size matches
+            existing_size = collection_info.config.params.vectors.size
+            if existing_size != vector_size:
+                print(f"Warning: Collection vector size ({existing_size}) doesn't match expected ({vector_size})")
         except Exception:
-            print(f"Creating collection {self.qdrant_collection}...")
+            print(f"Creating collection {self.qdrant_collection} with vector size {vector_size}...")
             self.qdrant.create_collection(
                 collection_name=self.qdrant_collection,
-                vectors_config=models.VectorParams(size=768, distance=models.Distance.COSINE)
+                vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
             )
             print(f"Collection {self.qdrant_collection} created.")
 

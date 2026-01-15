@@ -1,0 +1,66 @@
+{
+  "phase1": {
+    "results": [
+      {
+        "strategy_name": "fixed_token",
+        "strategy": "fixed_token",
+        "chunk_size": 512,
+        "chunk_overlap": 64,
+        "metrics": {
+          "paper_recall_at_k": 0.967032967032967,
+          "paper_mrr": 0.9372405372405371,
+          "queries_with_correct_paper": 0.967032967032967,
+          "num_chunks": 3917
+        }
+      },
+      {
+        "strategy_name": "section",
+        "strategy": "section",
+        "chunk_size": 0,
+        "chunk_overlap": 0,
+        "metrics": {
+          "paper_recall_at_k": 0.9578754578754579,
+          "paper_mrr": 0.9249694749694749,
+          "queries_with_correct_paper": 0.9578754578754579,
+          "num_chunks": 1121
+        }
+      },
+      {
+        "strategy_name": "paragraph",
+        "strategy": "paragraph",
+        "chunk_size": 0,
+        "chunk_overlap": 0,
+        "metrics": {
+          "paper_recall_at_k": 0.978021978021978,
+          "paper_mrr": 0.9676434676434678,
+          "queries_with_correct_paper": 0.978021978021978,
+          "num_chunks": 47816
+        }
+      },
+      {
+        "strategy_name": "sentence_sliding",
+        "strategy": "sentence_sliding",
+        "chunk_size": 512,
+        "chunk_overlap": 64,
+        "metrics": {
+          "paper_recall_at_k": 0.9835164835164835,
+          "paper_mrr": 0.9612026862026861,
+          "queries_with_correct_paper": 0.9835164835164835,
+          "num_chunks": 14593
+        }
+      },
+      {
+        "strategy_name": "section_hybrid",
+        "strategy": "section_hybrid",
+        "chunk_size": 512,
+        "chunk_overlap": 64,
+        "metrics": {
+          "paper_recall_at_k": 0.9578754578754579,
+          "paper_mrr": 0.9397130647130646,
+          "queries_with_correct_paper": 0.9578754578754579,
+          "num_chunks": 4400
+        }
+      }
+    ]
+  }
+}

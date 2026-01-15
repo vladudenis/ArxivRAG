@@ -66,11 +66,37 @@ class VLLMClient:
                 max_tokens=max_tokens or self.max_tokens
             )
             
-            return response.choices[0].text.strip()
+            text = response.choices[0].text
+            if text:
+                return text.strip()
+            else:
+                print("Warning: Empty response from LLM")
+                return ""
         
         except Exception as e:
-            print(f"Error generating text: {e}")
-            return ""
+            import traceback
+            error_msg = f"Error generating text: {e}\n{traceback.format_exc()}"
+            print(error_msg)
+            raise RuntimeError(f"Failed to generate text: {e}") from e
+    
+    def check_health(self) -> bool:
+        """
+        Check if vLLM server is available and responding.
+        
+        Returns:
+            True if server is healthy, False otherwise
+        """
+        try:
+            # Try a simple completion request
+            response = self.client.completions.create(
+                model=self.model,
+                prompt="test",
+                max_tokens=1
+            )
+            return True
+        except Exception as e:
+            print(f"vLLM health check failed: {e}")
+            return False
     
     def generate_with_chat(
         self,
@@ -97,11 +123,18 @@ class VLLMClient:
                 max_tokens=max_tokens or self.max_tokens
             )
             
-            return response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            if content:
+                return content.strip()
+            else:
+                print("Warning: Empty response from LLM")
+                return ""
         
         except Exception as e:
-            print(f"Error generating text: {e}")
-            return ""
+            import traceback
+            error_msg = f"Error generating text: {e}\n{traceback.format_exc()}"
+            print(error_msg)
+            raise RuntimeError(f"Failed to generate text: {e}") from e
     
     def generate_rag_response(
         self,
@@ -126,10 +159,10 @@ class VLLMClient:
         # Build context from chunks
         context = "\n\n".join([f"[{i+1}] {chunk}" for i, chunk in enumerate(chunks)])
         
-        # Truncate context if too long (approx 3 chars per token)
-        # Model limit is usually 2048, leave 512 for generation -> ~1500 for prompt
-        # Approx 4500 chars.
-        MAX_CONTEXT_CHARS = 6000 # aggressive truncation to be safe
+        # Truncate context if too long (approx 3-4 chars per token)
+        # TinyLlama limit is 2048 tokens, leave ~400 for generation -> ~1600 tokens for prompt
+        # Approx 4000-5000 chars max (conservative estimate)
+        MAX_CONTEXT_CHARS = 4000  # Reduced for TinyLlama's 2048 token limit
         if len(context) > MAX_CONTEXT_CHARS:
              print(f"Warning: Context too long ({len(context)} chars), truncating to {MAX_CONTEXT_CHARS}...")
              context = context[:MAX_CONTEXT_CHARS] + "...(truncated)"
