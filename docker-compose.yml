@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   dynamodb:
@@ -60,12 +60,13 @@ services:
       - arxiv-network
 
   vllm:
-    image: vllm/vllm-openai:v0.5.5  # Better GPU compatibility
+    image: vllm/vllm-openai:v0.5.5 # Better GPU compatibility
     container_name: arxiv-vllm
     ports:
       - "8000:8000"
     environment:
       - HF_TOKEN=${HF_TOKEN}
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
     volumes:
       - huggingface_cache:/root/.cache/huggingface
     command: >

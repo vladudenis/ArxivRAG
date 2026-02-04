@@ -87,11 +87,22 @@ Create/update `.env` file in the project root:
 
 ```env
 HF_TOKEN=your_huggingface_token_here
+
+# vLLM Configuration (for Stage 3 evaluation pipeline)
 VLLM_BASE_URL=http://localhost:8000/v1
 VLLM_MODEL=TinyLlama/TinyLlama-1.1B-Chat-v1.0
+
+# DeepSeek API Configuration (for Interactive RAG only)
+LLM_BASE_URL=https://api.deepseek.com
+LLM_API_KEY=your_deepseek_api_key_here
 ```
 
-**Note**: `HF_TOKEN` is required for downloading embedding models from HuggingFace. `VLLM_*` variables are optional and only needed for Stage 3 inference validation.
+**Note**:
+
+- `HF_TOKEN` is required for downloading embedding models from HuggingFace
+- **Pipeline (Stage 3)**: Uses vLLM with `TinyLlama` (default) - can be overridden via `VLLM_MODEL`
+- **Interactive RAG**: Uses DeepSeek API (requires `LLM_BASE_URL` and `LLM_API_KEY`) with 8k context window
+- `VLLM_*` variables are optional but recommended for Stage 3 inference validation
 
 ### 3. Start Infrastructure Services
 
@@ -156,6 +167,27 @@ python experiment_runner.py --skip-ingestion true --stage 3  # Stage 3 only
   - `3`: Run Stage 3 only (inference-based qualitative validation)
   - If not specified, runs all stages in sequence
   - **Note**: Stage 3 uses section-based chunking by default if no best strategy is found
+
+### Interactive RAG
+
+An interactive RAG system for querying papers in real-time:
+
+```powershell
+python interactive_rag.py
+```
+
+**Features**:
+
+- **Section-based chunking**: Uses the section-based strategy (fixed)
+- **DeepSeek API with 8k context**: Uses DeepSeek API (configured via `LLM_BASE_URL` and `LLM_API_KEY` in `.env`) with 8k context window
+- **Separate storage**: Uses dedicated MinIO bucket and DynamoDB table (doesn't interfere with evaluation pipeline)
+- **Two-phase workflow**:
+  1. **Add papers**: Paste arXiv URLs/IDs (one per line), type `done` when finished
+  2. **Query papers**: Ask questions interactively, type `done` to end session
+- **Session logging**: Automatically saves all queries and answers to `{paper_id}_{YYYY-MM-DD_HH-MM}.md` when session ends
+- **Auto-cleanup**: All embeddings and data are cleared when session ends
+
+**Note**: Requires DeepSeek API credentials (`LLM_BASE_URL` and `LLM_API_KEY`) in `.env` file for query answering.
 
 ## Pipeline Architecture
 

@@ -1,6 +1,7 @@
 import random
 import argparse
 import json
+import os
 import numpy as np
 from dotenv import load_dotenv
 from src.storage_manager import StorageManager
@@ -88,7 +89,7 @@ def run_single_stage(stage_num: int, storage, embedder, papers, queries, best_st
         print("RUNNING STAGE 3 ONLY: INFERENCE-BASED QUALITATIVE VALIDATION")
         print("="*80)
         
-        # Use section-based chunking by default for Stage 3
+        # Use section-based chunking by default for Stage 3 (seems best)
         if best_strategy is None:
             print("No best strategy provided, using section-based chunking by default")
             best_strategy = {
