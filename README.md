@@ -1,12 +1,12 @@
-# ArxivRAG - Interactive RAG for arXiv Papers
+# ArxivRAG - RAG for arXiv Papers
 
-An interactive Retrieval-Augmented Generation (RAG) system for querying arXiv papers. Enter your query directly; the system expands it, searches arXiv, filters by abstract similarity, downloads top papers, and answers using RAG.
+A Retrieval-Augmented Generation (RAG) system for querying arXiv papers. Enter topics for search and your question; the system fetches relevant papers, embeds them, and answers using RAG.
 
 ## Overview
 
-- **Query-first workflow**: No manual paper entry. Enter your question and the system fetches relevant papers automatically.
-- **Smart pre-filtering**: LLM query expansion → arXiv keyword search (max 25) → abstract similarity filter (top 5) → download and embed.
-- **Pluggable chunking**: Choose from 4 strategies at session start (STRUCTURE_AWARE_OVERLAP is the default/recommended).
+- **Topics + query workflow**: Enter comma-separated topics for arXiv search and a natural language question for embedding/retrieval.
+- **Pre-filtering**: arXiv keyword search (topics) → abstract similarity filter (query) → download and embed.
+- **Pluggable chunking**: STRUCTURE_AWARE_OVERLAP is the default strategy.
 - **Storage**: MinIO for PDFs, Qdrant for embeddings and paper metadata.
 
 ## Chunking Strategies
@@ -53,10 +53,6 @@ HF_TOKEN=your_huggingface_token_here
 # DeepSeek API (required for query answering)
 LLM_BASE_URL=https://api.deepseek.com
 LLM_API_KEY=your_deepseek_api_key_here
-
-# Query expansion (local vLLM)
-QUERY_EXPANSION_BASE_URL=http://localhost:8001/v1
-QUERY_EXPANSION_MODEL=TinyLlama/TinyLlama-1.1B-Chat-v1.0
 ```
 
 ### 3. Start Infrastructure
@@ -69,22 +65,8 @@ This starts:
 
 - **MinIO** (ports 9000, 9001): Stores PDF files
 - **Qdrant** (port 6333): Vector database for embeddings and paper metadata
-- **vLLM** (port 8001): Query expansion (TinyLlama-1.1B-Chat, GPU mode)
 
 ## Usage
-
-### Terminal (interactive)
-
-```powershell
-python interactive_rag.py
-```
-
-**Workflow**:
-
-1. **Select strategy**: Choose chunking strategy (1–4, default 1)
-2. **Enter query**: Type your question (e.g., "How does RAG reduce hallucination?")
-3. Per query: expand → search arXiv → filter by abstract → download top 5 → embed → retrieve → answer
-4. Type `done` to end session
 
 ### Web interface (FastAPI + Next.js)
 
@@ -105,15 +87,10 @@ npm run dev
 
 **API**:
 
-- `POST /query` — Request body: `{"query": "..."}`. Returns `{"answer": "...", "sources": [...]}`.
+- `POST /query` — Request body: `{"query": "...", "topics": "..."}`. Both fields required. Topics: comma-separated terms for arXiv search. Query: natural language question for embedding and retrieval. Returns `{"answer": "...", "sources": [...]}`.
 - `GET /health` — Health check.
-
-**Query expansion**:
-
-- vLLM is included in `docker-compose up -d` and runs on port 8001 (GPU mode).
 
 **Features**:
 
-- Session log saved to `{paper_id}_{timestamp}.md` when terminal session ends
-- All data cleared automatically when terminal session ends
+- Topics field: type terms and press comma to lock each term
 - Web interface shows cited sources (paper title, arXiv link) when the LLM uses them

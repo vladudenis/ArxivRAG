@@ -31,36 +31,9 @@ services:
     networks:
       - arxiv-network
 
-  vllm:
-    image: vllm/vllm-openai:v0.5.5 # Better GPU compatibility
-    container_name: arxiv-vllm
-    ports:
-      - "8001:8000"  # 8001 to avoid conflict with API on 8000
-    environment:
-      - HF_TOKEN=${HF_TOKEN}
-      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
-    volumes:
-      - huggingface_cache:/root/.cache/huggingface
-    command: >
-      --model ${VLLM_MODEL:-TinyLlama/TinyLlama-1.1B-Chat-v1.0}
-      --host 0.0.0.0
-      --port 8000
-      --enforce-eager
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    networks:
-      - arxiv-network
-    restart: unless-stopped
-
 volumes:
   minio_data:
   qdrant_data:
-  huggingface_cache:
 
 networks:
   arxiv-network:

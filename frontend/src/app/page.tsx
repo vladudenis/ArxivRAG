@@ -17,13 +17,13 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSend = useCallback(async (query: string) => {
+  const handleSend = useCallback(async (query: string, topics: string) => {
     setError(null);
     setMessages((prev) => [...prev, { role: "user", content: query }]);
     setLoading(true);
 
     try {
-      const res = await sendQuery(query);
+      const res = await sendQuery(query, topics);
       setMessages((prev) => [
         ...prev,
         {
@@ -75,10 +75,13 @@ export default function Home() {
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <p className="text-zinc-500 mb-2">
-                Enter a question to search arXiv and get an AI-powered answer.
+                Enter topics for arXiv search and a question to get an AI-powered answer.
               </p>
               <p className="text-sm text-zinc-400">
-                Example: &quot;How does RAG reduce hallucination?&quot;
+                Example topics: Agentic RAG, transformer, hallucination
+              </p>
+              <p className="text-sm text-zinc-400 mt-1">
+                Example question: &quot;How does RAG reduce hallucination?&quot;
               </p>
             </div>
           )}

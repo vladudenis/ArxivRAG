@@ -17,12 +17,15 @@ const getApiUrl = (): string => {
   return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 };
 
-export const sendQuery = async (query: string): Promise<QueryResponse> => {
+export const sendQuery = async (
+  query: string,
+  topics: string
+): Promise<QueryResponse> => {
   const url = getApiUrl();
   const res = await fetch(`${url}/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, topics }),
   });
 
   if (!res.ok) {

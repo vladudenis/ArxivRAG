@@ -14,12 +14,11 @@ from pydantic import BaseModel
 load_dotenv()
 
 from src.api.rag_service import RAGService
-from interactive_rag import InteractiveRAGStorage, clear_all_data
+from src.api.rag_storage import RAGStorage, clear_all_data
 from src.embedder import PaperEmbedder
 from src.chunker import ChunkingStrategy
 from src.llm_client import DeepSeekClient
 from src.arxiv_retriever import ArxivRetriever
-from src.query_expander import QueryExpander
 
 
 # Global RAG service (initialized on startup)
@@ -28,6 +27,7 @@ rag_service: RAGService | None = None
 
 class QueryRequest(BaseModel):
     query: str
+    topics: str
 
 
 class SourceResponse(BaseModel):
@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI):
     """Initialize RAG components on startup."""
     global rag_service
 
-    storage = InteractiveRAGStorage()
+    storage = RAGStorage()
     storage.init_db()
     storage.init_bucket()
 
@@ -57,7 +57,6 @@ async def lifespan(app: FastAPI):
     storage.init_qdrant(vector_size=embedding_dim)
 
     retriever = ArxivRetriever()
-    query_expander = QueryExpander()
 
     try:
         llm_client = DeepSeekClient()
@@ -70,7 +69,6 @@ async def lifespan(app: FastAPI):
             storage=storage,
             embedder=embedder,
             retriever=retriever,
-            query_expander=query_expander,
             llm_client=llm_client,
             strategy=ChunkingStrategy.STRUCTURE_AWARE_OVERLAP,
             embedding_dim=embedding_dim,
@@ -111,10 +109,12 @@ async def query(request: QueryRequest) -> QueryResponse:
 
     if not request.query or not request.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    if not request.topics or not request.topics.strip():
+        raise HTTPException(status_code=400, detail="Topics cannot be empty.")
 
     # Run blocking RAG pipeline in thread pool to avoid freezing the event loop
     result: dict[str, Any] = await asyncio.to_thread(
-        rag_service.query, request.query.strip()
+        rag_service.query, request.query.strip(), request.topics.strip()
     )
 
     sources = [

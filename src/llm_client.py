@@ -3,7 +3,7 @@ DeepSeek API client for text generation.
 Uses OpenAI-compatible API (DeepSeek API).
 """
 import os
-from typing import List, Dict
+from typing import List, Dict, Any, Tuple
 from openai import OpenAI
 
 
@@ -105,29 +105,32 @@ class DeepSeekClient:
     def generate_rag_response(
         self,
         query: str,
-        chunks: List[str],
+        chunks_with_meta: List[Tuple[str, Dict[str, Any]]],
         max_chunks: int = 5,
         _retry_count: int = 0,
     ) -> str:
-        """Generate RAG response from query and retrieved chunks."""
-        chunks = chunks[:max_chunks]
+        """Generate RAG response from query and retrieved chunks with metadata."""
+        chunks_with_meta = chunks_with_meta[:max_chunks]
 
         tokens_for_context = self.context_limit - self.max_tokens - 1000
         tokens_for_context = max(500, tokens_for_context)
         MAX_CONTEXT_CHARS = int(tokens_for_context * 3.5)
 
-        format_overhead_per_chunk = 50
-        available_for_content = MAX_CONTEXT_CHARS - (len(chunks) * format_overhead_per_chunk)
-        chars_per_chunk = max(2000, available_for_content // len(chunks)) if chunks else 0
+        format_overhead_per_chunk = 80
+        available_for_content = MAX_CONTEXT_CHARS - (len(chunks_with_meta) * format_overhead_per_chunk)
+        chars_per_chunk = max(2000, available_for_content // len(chunks_with_meta)) if chunks_with_meta else 0
 
-        truncated_chunks = []
-        for chunk in chunks:
-            if len(chunk) > chars_per_chunk:
-                truncated_chunks.append(chunk[:chars_per_chunk] + "...")
-            else:
-                truncated_chunks.append(chunk)
+        context_parts: List[str] = []
+        for chunk_text, payload in chunks_with_meta:
+            title = payload.get("title", "Unknown")
+            paper_id = payload.get("paper_id", "")
+            section = payload.get("section") or "—"
+            source_line = f"[Source: {title} (arxiv.org/abs/{paper_id}), Section: {section}]"
+            if len(chunk_text) > chars_per_chunk:
+                chunk_text = chunk_text[:chars_per_chunk] + "..."
+            context_parts.append(f"{source_line}\n{chunk_text}")
 
-        context = "\n\n".join([f"[{i+1}] {chunk}" for i, chunk in enumerate(truncated_chunks)])
+        context = "\n\n".join(context_parts)
 
         if len(context) > MAX_CONTEXT_CHARS:
             context = context[:MAX_CONTEXT_CHARS] + "...(truncated)"
@@ -137,7 +140,7 @@ class DeepSeekClient:
         messages = [
             {
                 "role": "system",
-                "content": "You are a helpful assistant that answers questions based on the provided context. Provide specific, detailed answers with technical details such as model names, architectures, and methodologies when available in the context. Use only the information from the context to answer. When citing information from the context, use the source number in square brackets, e.g. [1] or [2]. Only cite sources you actually use.",
+                "content": "You are an expert who answers questions directly and authoritatively. Do not start with phrases like 'Based on the provided context' or 'According to the context'—answer as if you know the material. Use markdown for formatting: **bold** for terms and concepts, lists for enumerations. Be specific: include model names, architectures, and methodologies when available. Use only information from the context. When referencing a source, mention the paper title naturally (e.g. 'In the RAG survey by Smith et al.'). Do not use numeric indices like [1] or [2].",
             },
             {"role": "user", "content": prompt},
         ]
@@ -148,21 +151,20 @@ class DeepSeekClient:
             error_str = str(e)
             if "maximum context length" in error_str and _retry_count < 2 and max_chunks > 1:
                 return self.generate_rag_response(
-                    query, chunks, max_chunks=max(1, max_chunks // 2), _retry_count=_retry_count + 1
+                    query, chunks_with_meta, max_chunks=max(1, max_chunks // 2), _retry_count=_retry_count + 1
                 )
             raise
 
     def _build_rag_prompt(self, query: str, context: str) -> str:
         """Build RAG prompt from query and context."""
-        return f"""Context information is below:
+        return f"""Context:
 ---
 {context}
 ---
 
-Given the context information above, please answer the following query with specific details:
-{query}
+Answer this question directly and in detail. Use markdown (**bold** for key terms). Include model names, architectures, and technical details when available. Reference papers by their title when citing.
 
-Provide a detailed answer that includes specific model names, architecture details, and technical specifications when available in the context. Be precise and cite specific information from the context using [1], [2], etc. for the source numbers.
+Question: {query}
 
 Answer:"""
 
@@ -170,8 +172,8 @@ Answer:"""
 if __name__ == "__main__":
     client = DeepSeekClient()
     test_chunks = [
-        "Machine learning is a subset of artificial intelligence.",
-        "Deep learning uses neural networks with multiple layers.",
+        ("Machine learning is a subset of artificial intelligence.", {"title": "ML Basics", "paper_id": "1234.5678", "section": "Intro"}),
+        ("Deep learning uses neural networks with multiple layers.", {"title": "DL Survey", "paper_id": "2345.6789", "section": "Background"}),
     ]
     response = client.generate_rag_response("What is machine learning?", test_chunks)
     print(f"Response: {response}")
