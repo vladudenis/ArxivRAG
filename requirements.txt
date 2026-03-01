@@ -15,3 +15,5 @@ sacrebleu
 bert-score
 openai
 qdrant-client
+fastapi
+uvicorn
