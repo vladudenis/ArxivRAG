@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List, Optional, Dict, Any, Callable
+from typing import List, Optional, Any, Callable
 
 from src.chunk import Chunk
 from src.document_processor import DocumentProcessor

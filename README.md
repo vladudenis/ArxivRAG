@@ -87,7 +87,7 @@ npm run dev
 
 **API**:
 
-- `POST /query` — Request body: `{"query": "...", "topics": "..."}`. Both fields required. Topics: comma-separated terms for arXiv search. Query: natural language question for embedding and retrieval. Returns `{"results": [{"strategy", "strategy_label", "answer", "sources"}, ...]}` with one entry per chunking strategy.
+- `POST /query` — Request body: `{"query": "...", "topics": "..."}`. Both fields required. Optional: `include_debug_context: true` to return retrieved chunks per strategy (for evaluation). Topics: comma-separated terms for arXiv search. Query: natural language question for embedding and retrieval. Returns `{"results": [{"strategy", "strategy_label", "answer", "sources"}, ...]}` with one entry per chunking strategy.
 - `GET /health` — Health check.
 
 **Features**:
@@ -95,3 +95,25 @@ npm run dev
 - Topics field: type terms and press comma to lock each term
 - Web interface shows cited sources (paper title, arXiv link) when the LLM uses them
 - Paginated strategy view: navigate between answers from each chunking strategy (page 1/4, 2/4, …) to compare results
+
+## Evaluation (LLM-as-Judge)
+
+The `src/evaluation` folder contains an LLM-as-judge pipeline for benchmarking RAG performance across chunking strategies.
+
+**What it does**:
+
+- Loads a JSONL dataset and calls `POST /query` with `include_debug_context=true`
+- Scores each strategy with LLM judge metrics (correctness, groundedness, completeness, citation_quality, hallucination, verdict)
+- Computes deterministic metrics (must_include_hit_rate, recall_at_k, citation_count) and text overlap (ROUGE-L, BLEU) when reference answers exist
+- Writes `results.jsonl`, `summary.json`, and `report.md` to `src/evaluation/output`
+
+**Dataset format** (one JSON object per line in `src/evaluation/dataset.template.jsonl`):
+
+```json
+{"id":"ex_001","topics":"rag, hallucination","question":"How does RAG reduce hallucinations?","reference_answer":"...","must_include":["retrieving evidence"],"relevant_papers":["1706.03762"],"metadata":{"difficulty":"easy"}}
+```
+
+**Run evaluation**:
+
+1. Start the API (see Usage above)
+2. Run: `python -m src.evaluation.run_eval --dataset src/evaluation/dataset.template.jsonl --base-url http://localhost:8000 --output-dir src/evaluation/output`

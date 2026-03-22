@@ -27,6 +27,7 @@ rag_service: RAGService | None = None
 class QueryRequest(BaseModel):
     query: str
     topics: str
+    include_debug_context: bool = False
 
 
 class SourceResponse(BaseModel):
@@ -41,6 +42,7 @@ class StrategyResultResponse(BaseModel):
     strategy_label: str
     answer: str
     sources: list[SourceResponse]
+    debug_context: list[dict[str, Any]] | None = None
 
 
 class QueryResponse(BaseModel):
@@ -118,7 +120,10 @@ async def query(request: QueryRequest) -> QueryResponse:
 
     # Run blocking RAG pipeline in thread pool to avoid freezing the event loop
     result: dict[str, Any] = await asyncio.to_thread(
-        rag_service.query, request.query.strip(), request.topics.strip()
+        rag_service.query,
+        request.query.strip(),
+        request.topics.strip(),
+        request.include_debug_context,
     )
 
     results = [
@@ -135,6 +140,7 @@ async def query(request: QueryRequest) -> QueryResponse:
                 )
                 for s in r.get("sources", [])
             ],
+            debug_context=r.get("debug_context"),
         )
         for r in result.get("results", [])
     ]

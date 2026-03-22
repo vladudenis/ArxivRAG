@@ -245,10 +245,10 @@ class RAGService:
         self.embedding_dim = embedding_dim
         self.logger = logger or RAGLogger()
 
-    def query(self, query: str, topics: str) -> Dict[str, Any]:
+    def query(self, query: str, topics: str, include_debug_context: bool = False) -> Dict[str, Any]:
         """
         Run full RAG pipeline for all chunking strategies.
-        Returns {results: [{strategy, strategy_label, answer, sources}, ...]}.
+        Returns {results: [{strategy, strategy_label, answer, sources, debug_context?}, ...]}.
         """
         self.logger.log_step(0, "Starting RAG pipeline", query=query[:80], topics=topics[:80])
 
@@ -328,12 +328,26 @@ class RAGService:
                 answer = f"Error generating response: {e}"
 
             sources = get_sources_from_chunks(chunks_for_llm)
-            results.append({
+            strategy_result: Dict[str, Any] = {
                 "strategy": strategy.value,
                 "strategy_label": _format_strategy_label(strategy),
                 "answer": answer,
                 "sources": sources,
-            })
+            }
+
+            if include_debug_context:
+                strategy_result["debug_context"] = [
+                    {
+                        "paper_id": payload.get("paper_id", ""),
+                        "title": payload.get("title", ""),
+                        "section": payload.get("section") or "",
+                        "position": payload.get("position", 0),
+                        "chunk_text": chunk_text,
+                    }
+                    for chunk_text, payload in chunks_for_llm
+                ]
+
+            results.append(strategy_result)
 
         self.logger.log_step(7, "Multi-strategy results", count=len(results))
         return {"results": results}
