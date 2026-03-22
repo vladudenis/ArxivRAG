@@ -5,9 +5,15 @@ export interface Source {
   arxiv_url: string;
 }
 
-export interface QueryResponse {
+export interface StrategyResult {
+  strategy: string;
+  strategy_label: string;
   answer: string;
   sources: Source[];
+}
+
+export interface QueryResponse {
+  results: StrategyResult[];
 }
 
 const getApiUrl = (): string => {

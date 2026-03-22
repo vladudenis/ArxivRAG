@@ -1,9 +1,10 @@
-import type { Source } from "@/lib/api";
+import type { Source, StrategyResult } from "@/lib/api";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   sources?: Source[];
+  results?: StrategyResult[];
 }
 
 const escapeHtml = (s: string): string =>
@@ -25,22 +26,44 @@ export const generateSessionHtml = (messages: Message[]): string => {
     const bubbleClass = isUser ? "bubble-user" : "bubble-assistant";
     const alignClass = isUser ? "align-end" : "align-start";
 
-    let sourcesHtml = "";
-    if (!isUser && msg.sources && msg.sources.length > 0) {
-      sourcesHtml = `
+    let bodyHtml: string;
+    if (!isUser && msg.results && msg.results.length > 0) {
+      bodyHtml = msg.results
+        .map((r) => {
+          const label = r.strategy_label
+            ? `<div class="strategy-block"><h3 class="strategy-title">${escapeHtml(r.strategy_label)}</h3>`
+            : `<div class="strategy-block">`;
+          const sourcesHtml =
+            r.sources?.length && r.sources.length > 0
+              ? `
+            <div class="sources-block">
+              <p class="sources-label">Sources</p>
+              <ul class="sources-list">
+                ${r.sources.map((s) => `<li>${formatSource(s)}</li>`).join("")}
+              </ul>
+            </div>`
+              : "";
+          return `${label}<p class="content">${escapeHtml(r.answer).replace(/\n/g, "<br>")}</p>${sourcesHtml}</div>`;
+        })
+        .join("");
+    } else {
+      const sourcesHtml =
+        !isUser && msg.sources && msg.sources.length > 0
+          ? `
         <div class="sources-block">
           <p class="sources-label">Sources</p>
           <ul class="sources-list">
             ${msg.sources.map((s) => `<li>${formatSource(s)}</li>`).join("")}
           </ul>
-        </div>`;
+        </div>`
+          : "";
+      bodyHtml = `<p class="content">${escapeHtml(msg.content).replace(/\n/g, "<br>")}</p>${sourcesHtml}`;
     }
 
     return `
       <div class="message ${alignClass}">
         <div class="${bubbleClass}">
-          <p class="content">${escapeHtml(msg.content).replace(/\n/g, "<br>")}</p>
-          ${sourcesHtml}
+          ${bodyHtml}
         </div>
       </div>`;
   });
@@ -97,6 +120,21 @@ export const generateSessionHtml = (messages: Message[]): string => {
       margin: 0;
       white-space: pre-wrap;
       word-wrap: break-word;
+    }
+    .strategy-block {
+      padding: 12px 0;
+      border-bottom: 1px solid #e4e4e7;
+    }
+    .strategy-block:last-child {
+      border-bottom: none;
+    }
+    .strategy-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: #3f3f46;
+      margin: 0 0 8px 0;
+      text-transform: none;
+      letter-spacing: 0;
     }
     .sources-block {
       margin-top: 12px;

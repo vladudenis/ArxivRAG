@@ -3,13 +3,13 @@
 import { useState, useCallback } from "react";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
-import { sendQuery, type Source } from "@/lib/api";
+import { sendQuery, type StrategyResult } from "@/lib/api";
 import { downloadSessionHtml } from "@/lib/sessionExport";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
-  sources?: Source[];
+  results?: StrategyResult[];
 }
 
 export default function Home() {
@@ -28,8 +28,8 @@ export default function Home() {
         ...prev,
         {
           role: "assistant",
-          content: res.answer,
-          sources: res.sources,
+          content: res.results[0]?.answer ?? "",
+          results: res.results,
         },
       ]);
     } catch (e) {
@@ -50,7 +50,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6">
-        <header className="flex items-center justify-between gap-4 border-b border-zinc-200 py-3">
+        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-zinc-200 bg-white py-3">
           <div>
             <h1 className="text-lg font-semibold text-zinc-900">
               ArxivRAG
@@ -91,7 +91,7 @@ export default function Home() {
               key={i}
               role={msg.role}
               content={msg.content}
-              sources={msg.sources}
+              results={msg.results}
             />
           ))}
 

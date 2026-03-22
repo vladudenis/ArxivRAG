@@ -193,6 +193,39 @@ def get_sources_from_chunks(
     return sources
 
 
+ALL_STRATEGIES = [
+    ChunkingStrategy.STRUCTURE_AWARE_OVERLAP,
+    ChunkingStrategy.SEMANTIC_PARAGRAPH_GROUPING,
+    ChunkingStrategy.FIXED_WINDOW_OVERLAP,
+    ChunkingStrategy.SECTION_LEVEL_CHUNKING,
+]
+
+
+def _format_strategy_label(strategy: ChunkingStrategy) -> str:
+    """Human-readable label for a chunking strategy."""
+    labels = {
+        ChunkingStrategy.STRUCTURE_AWARE_OVERLAP: "Structure-Aware Overlap",
+        ChunkingStrategy.SEMANTIC_PARAGRAPH_GROUPING: "Semantic Paragraph Grouping",
+        ChunkingStrategy.FIXED_WINDOW_OVERLAP: "Fixed Window Overlap",
+        ChunkingStrategy.SECTION_LEVEL_CHUNKING: "Section-Level Chunking",
+    }
+    return labels.get(strategy, strategy.value)
+
+
+def _empty_results(message: str) -> Dict[str, Any]:
+    """Return results list with one fallback entry when pipeline fails early."""
+    return {
+        "results": [
+            {
+                "strategy": ChunkingStrategy.STRUCTURE_AWARE_OVERLAP.value,
+                "strategy_label": _format_strategy_label(ChunkingStrategy.STRUCTURE_AWARE_OVERLAP),
+                "answer": message,
+                "sources": [],
+            }
+        ]
+    }
+
+
 class RAGService:
     """Orchestrates the full RAG pipeline for a single query."""
 
@@ -202,7 +235,6 @@ class RAGService:
         embedder: PaperEmbedder,
         retriever: ArxivRetriever,
         llm_client: DeepSeekClient,
-        strategy: ChunkingStrategy = ChunkingStrategy.STRUCTURE_AWARE_OVERLAP,
         embedding_dim: int = 768,
         logger: Optional[RAGLogger] = None,
     ):
@@ -210,15 +242,13 @@ class RAGService:
         self.embedder = embedder
         self.retriever = retriever
         self.llm_client = llm_client
-        self.strategy = strategy
         self.embedding_dim = embedding_dim
         self.logger = logger or RAGLogger()
 
     def query(self, query: str, topics: str) -> Dict[str, Any]:
         """
-        Run full RAG pipeline and return {answer, sources}.
-        topics: comma-separated terms for arXiv search.
-        query: used for embedding similarity and LLM context.
+        Run full RAG pipeline for all chunking strategies.
+        Returns {results: [{strategy, strategy_label, answer, sources}, ...]}.
         """
         self.logger.log_step(0, "Starting RAG pipeline", query=query[:80], topics=topics[:80])
 
@@ -231,7 +261,7 @@ class RAGService:
         papers = self.retriever.search(search_terms, max_results=20)
         if not papers:
             self.logger.log_step(1, "Search arXiv", found=0)
-            return {"answer": "No papers found for this query.", "sources": []}
+            return self._empty_results("No papers found for this query.")
         self.logger.log_step(1, "Search arXiv", found=len(papers))
 
         # 2. Filter by abstract cosine similarity to query (top 5)
@@ -241,7 +271,7 @@ class RAGService:
         )
         if not top_papers:
             self.logger.log_step(2, "Filter by abstract similarity", kept=0)
-            return {"answer": "No relevant papers after filtering.", "sources": []}
+            return self._empty_results("No relevant papers after filtering.")
         self.logger.log_step(2, "Filter by abstract similarity", kept=len(top_papers))
 
         # 3. Download top 5
@@ -249,56 +279,61 @@ class RAGService:
         paper_data_list = self.retriever.download_top_k(top_papers, k=5)
         if not paper_data_list:
             self.logger.log_step(3, "Download top papers", downloaded=0)
-            return {"answer": "Failed to download papers.", "sources": []}
+            return self._empty_results("Failed to download papers.")
         self.logger.log_step(3, "Download top papers", downloaded=len(paper_data_list))
 
-        # 4. Clear and process
-        self.logger.log_step(4, "Clear and process papers")
+        # 4. Clear and process papers with ALL chunking strategies
+        self.logger.log_step(4, "Clear and process papers (all strategies)")
         clear_all_data(self.storage, vector_size=self.embedding_dim)
 
         for paper_data in paper_data_list:
-            process_and_store_paper(
+            for strategy in ALL_STRATEGIES:
+                process_and_store_paper(
+                    self.storage,
+                    self.embedder,
+                    paper_data,
+                    strategy,
+                    skip_abstract=True,
+                )
+        self.logger.log_step(4, "Clear and process papers", processed=len(paper_data_list) * len(ALL_STRATEGIES))
+
+        # 5 & 6. For each strategy: retrieve chunks and generate answer
+        results: List[Dict[str, Any]] = []
+        for strategy in ALL_STRATEGIES:
+            chunks_with_meta = retrieve_chunks_with_metadata(
                 self.storage,
                 self.embedder,
-                paper_data,
-                self.strategy,
-                skip_abstract=True,
+                query,
+                strategy,
+                top_k=8,
             )
-        self.logger.log_step(4, "Clear and process papers", processed=len(paper_data_list))
 
-        # 5. Retrieve chunks with metadata (using query for embedding similarity)
-        self.logger.log_step(5, "Retrieve chunks with metadata", top_k=8)
-        chunks_with_meta = retrieve_chunks_with_metadata(
-            self.storage,
-            self.embedder,
-            query,
-            self.strategy,
-            top_k=8,
-        )
+            if not chunks_with_meta:
+                results.append({
+                    "strategy": strategy.value,
+                    "strategy_label": _format_strategy_label(strategy),
+                    "answer": "No relevant chunks found.",
+                    "sources": [],
+                })
+                continue
 
-        if not chunks_with_meta:
-            self.logger.log_step(5, "Retrieve chunks with metadata", chunks=0)
-            return {"answer": "No relevant chunks found.", "sources": []}
-        self.logger.log_step(5, "Retrieve chunks with metadata", chunks=len(chunks_with_meta))
+            max_chunks = min(10, len(chunks_with_meta))
+            chunks_for_llm = chunks_with_meta[:max_chunks]
 
-        max_chunks = min(10, len(chunks_with_meta))
-        chunks_for_llm = chunks_with_meta[:max_chunks]
+            try:
+                answer = self.llm_client.generate_rag_response(
+                    query, chunks_for_llm, max_chunks=max_chunks
+                )
+            except Exception as e:
+                answer = f"Error generating response: {e}"
 
-        # 6. Generate RAG response (context includes paper source per chunk)
-        self.logger.log_step(6, "Generate RAG response", max_chunks=max_chunks)
-        try:
-            answer = self.llm_client.generate_rag_response(
-                query, chunks_for_llm, max_chunks=max_chunks
-            )
-        except Exception as e:
-            self.logger.log_step(6, "Generate RAG response", error=str(e))
-            return {
-                "answer": f"Error generating response: {e}",
-                "sources": [],
-            }
+            sources = get_sources_from_chunks(chunks_for_llm)
+            results.append({
+                "strategy": strategy.value,
+                "strategy_label": _format_strategy_label(strategy),
+                "answer": answer,
+                "sources": sources,
+            })
 
-        # 7. Sources = unique papers from chunks passed to LLM
-        sources = get_sources_from_chunks(chunks_for_llm)
-        self.logger.log_step(7, "Sources from chunks", count=len(sources))
-
-        return {"answer": answer, "sources": sources}
+        self.logger.log_step(7, "Multi-strategy results", count=len(results))
+        return {"results": results}

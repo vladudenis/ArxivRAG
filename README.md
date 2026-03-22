@@ -6,7 +6,7 @@ A Retrieval-Augmented Generation (RAG) system for querying arXiv papers. Enter t
 
 - **Topics + query workflow**: Enter comma-separated topics for arXiv search and a natural language question for embedding/retrieval.
 - **Pre-filtering**: arXiv keyword search (topics) → abstract similarity filter (query) → download and embed.
-- **Pluggable chunking**: STRUCTURE_AWARE_OVERLAP is the default strategy.
+- **Multi-strategy chunking**: Each query returns answers from all four chunking strategies; the UI shows a paginated view (1/4, 2/4, …) to compare them.
 - **Storage**: MinIO for PDFs, Qdrant for embeddings and paper metadata.
 
 ## Chunking Strategies
@@ -87,10 +87,11 @@ npm run dev
 
 **API**:
 
-- `POST /query` — Request body: `{"query": "...", "topics": "..."}`. Both fields required. Topics: comma-separated terms for arXiv search. Query: natural language question for embedding and retrieval. Returns `{"answer": "...", "sources": [...]}`.
+- `POST /query` — Request body: `{"query": "...", "topics": "..."}`. Both fields required. Topics: comma-separated terms for arXiv search. Query: natural language question for embedding and retrieval. Returns `{"results": [{"strategy", "strategy_label", "answer", "sources"}, ...]}` with one entry per chunking strategy.
 - `GET /health` — Health check.
 
 **Features**:
 
 - Topics field: type terms and press comma to lock each term
 - Web interface shows cited sources (paper title, arXiv link) when the LLM uses them
+- Paginated strategy view: navigate between answers from each chunking strategy (page 1/4, 2/4, …) to compare results

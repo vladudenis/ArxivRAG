@@ -16,7 +16,6 @@ load_dotenv()
 from src.api.rag_service import RAGService
 from src.api.rag_storage import RAGStorage, clear_all_data
 from src.embedder import PaperEmbedder
-from src.chunker import ChunkingStrategy
 from src.llm_client import DeepSeekClient
 from src.arxiv_retriever import ArxivRetriever
 
@@ -37,9 +36,15 @@ class SourceResponse(BaseModel):
     arxiv_url: str
 
 
-class QueryResponse(BaseModel):
+class StrategyResultResponse(BaseModel):
+    strategy: str
+    strategy_label: str
     answer: str
     sources: list[SourceResponse]
+
+
+class QueryResponse(BaseModel):
+    results: list[StrategyResultResponse]
 
 
 @asynccontextmanager
@@ -70,7 +75,6 @@ async def lifespan(app: FastAPI):
             embedder=embedder,
             retriever=retriever,
             llm_client=llm_client,
-            strategy=ChunkingStrategy.STRUCTURE_AWARE_OVERLAP,
             embedding_dim=embedding_dim,
         )
     else:
@@ -117,20 +121,25 @@ async def query(request: QueryRequest) -> QueryResponse:
         rag_service.query, request.query.strip(), request.topics.strip()
     )
 
-    sources = [
-        SourceResponse(
-            paper_id=s["paper_id"],
-            title=s["title"],
-            section=s.get("section", ""),
-            arxiv_url=s["arxiv_url"],
+    results = [
+        StrategyResultResponse(
+            strategy=r["strategy"],
+            strategy_label=r["strategy_label"],
+            answer=r["answer"],
+            sources=[
+                SourceResponse(
+                    paper_id=s["paper_id"],
+                    title=s["title"],
+                    section=s.get("section", ""),
+                    arxiv_url=s["arxiv_url"],
+                )
+                for s in r.get("sources", [])
+            ],
         )
-        for s in result.get("sources", [])
+        for r in result.get("results", [])
     ]
 
-    return QueryResponse(
-        answer=result.get("answer", ""),
-        sources=sources,
-    )
+    return QueryResponse(results=results)
 
 
 @app.get("/health")
