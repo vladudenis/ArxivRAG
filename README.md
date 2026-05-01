@@ -5,7 +5,7 @@ A Retrieval-Augmented Generation (RAG) system for querying arXiv papers. Enter t
 ## Overview
 
 - **Topics + query workflow**: Enter comma-separated topics for arXiv search and a natural language question for embedding/retrieval.
-- **Pre-filtering**: arXiv keyword search (topics) → abstract similarity filter (query) → download and embed.
+- **Pre-filtering**: arXiv keyword search (topics, max 20 results) → abstract similarity filter (query, top 6 papers) → download and embed.
 - **Multi-strategy chunking**: Each query returns answers from all four chunking strategies; the UI shows a paginated view (1/4, 2/4, …) to compare them.
 - **Storage**: MinIO for PDFs, Qdrant for embeddings and paper metadata.
 
@@ -96,24 +96,23 @@ npm run dev
 - Web interface shows cited sources (paper title, arXiv link) when the LLM uses them
 - Paginated strategy view: navigate between answers from each chunking strategy (page 1/4, 2/4, …) to compare results
 
-## Evaluation (LLM-as-Judge)
+## Evaluation (retrieval-only)
 
-The `src/evaluation` folder contains an LLM-as-judge pipeline for benchmarking RAG performance across chunking strategies.
+Search and abstract-filter sizes are centralized in [`src/rag_constants.py`](src/rag_constants.py) (`ARXIV_SEARCH_MAX_RESULTS=20`, `ABSTRACT_FILTER_TOP_K=6`). Chunk retrieval defaults to `RETRIEVAL_CHUNK_TOP_K=8` with dense or hybrid (dense + BM25) retrieval and optional cross-encoder re-ranking.
 
-**What it does**:
+**1. Freeze a corpus** (full reset of snapshot + arXiv search/filter + PDF download to MinIO bucket `eval-frozen-corpus`):
 
-- Loads a JSONL dataset and calls `POST /query` with `include_debug_context=true`
-- Scores each strategy with LLM judge metrics (correctness, groundedness, completeness, citation_quality, hallucination, verdict)
-- Computes deterministic metrics (must_include_hit_rate, recall_at_k, citation_count) and text overlap (ROUGE-L, BLEU) when reference answers exist
-- Writes `results.jsonl`, `summary.json`, and `report.md` to `src/evaluation/output`
-
-**Dataset format** (one JSON object per line in `src/evaluation/dataset.template.jsonl`):
-
-```json
-{"id":"ex_001","topics":"rag, hallucination","question":"How does RAG reduce hallucinations?","reference_answer":"...","must_include":["retrieving evidence"],"relevant_papers":["1706.03762"],"metadata":{"difficulty":"easy"}}
+```powershell
+docker-compose up -d
+python -m src.evaluation.freeze_corpus --dataset src/evaluation/dataset.template.jsonl --snapshot-id v1
 ```
 
-**Run evaluation**:
+**2. Run retrieval evaluation** (indexes frozen PDFs, uses frozen paper IDs as gold docs, compares retrieval against dataset `gold_passages`):
 
-1. Start the API (see Usage above)
-2. Run: `python -m src.evaluation.run_eval --dataset src/evaluation/dataset.template.jsonl --base-url http://localhost:8000 --output-dir src/evaluation/output`
+```powershell
+python -m src.evaluation.run_retrieval_eval --dataset src/evaluation/dataset.template.jsonl --snapshot-id v1 --phase all --output-dir src/evaluation/output
+```
+
+Output: `src/evaluation/output/retrieval_eval.json` with per-configuration `hit_at_k`, `precision_at_k`, and `mrr`.
+
+**Dataset format** (JSONL): `id` (optional), `topics`, `question`, `gold_passages` (optional, used by retrieval evaluation), `metadata` (optional). `gold_docs` from the dataset are ignored; gold docs come from the frozen snapshot mapping (`topics` + `question` → paper IDs).

@@ -124,7 +124,7 @@ class DeepSeekClient:
         for chunk_text, payload in chunks_with_meta:
             title = payload.get("title", "Unknown")
             paper_id = payload.get("paper_id", "")
-            section = payload.get("section") or "—"
+            section = payload.get("section") or "-"
             source_line = f"[Source: {title} (arxiv.org/abs/{paper_id}), Section: {section}]"
             if len(chunk_text) > chars_per_chunk:
                 chunk_text = chunk_text[:chars_per_chunk] + "..."

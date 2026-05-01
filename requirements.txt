@@ -3,6 +3,7 @@ h5py
 sentence-transformers
 numpy
 scikit-learn
+rank-bm25
 torch
 python-dotenv
 boto3

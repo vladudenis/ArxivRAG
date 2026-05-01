@@ -1,5 +1,5 @@
 """
-RAG storage: bucket/collections for web RAG pipeline.
+RAG storage: bucket/collections for RAG indexing and retrieval.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ RAG_PAPERS_COLLECTION = "interactive_rag_papers"
 
 
 class RAGStorage(StorageManager):
-    """Storage manager for web RAG pipeline."""
+    """Storage manager for RAG pipeline."""
 
     def __init__(self):
         super().__init__()
@@ -96,6 +96,7 @@ def process_and_store_paper(
     except Exception as e:
         print(f"  Error processing paper: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

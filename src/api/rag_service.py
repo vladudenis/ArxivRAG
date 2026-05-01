@@ -3,164 +3,25 @@ RAG service: orchestrates the full pipeline and extracts cited sources.
 """
 from __future__ import annotations
 
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Optional
 
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-
-from src.logger import RAGLogger
-from src.api.rag_storage import RAGStorage, process_and_store_paper, clear_all_data
+from src.api.logger import RAGLogger
+from src.rag_storage import RAGStorage, process_and_store_paper, clear_all_data
 from src.embedder import PaperEmbedder
 from src.chunker import ChunkingStrategy
-from src.llm_client import DeepSeekClient
+from src.api.llm_client import DeepSeekClient
 from src.arxiv_retriever import ArxivRetriever
-
-
-def _mmr_select(
-    vectors: np.ndarray,
-    query_emb: np.ndarray,
-    payloads: List[Dict[str, Any]],
-    top_k: int,
-    lambda_param: float = 0.7,
-) -> List[int]:
-    """
-    Select top_k indices using Maximal Marginal Relevance.
-    MMR = λ * sim(q, d) - (1-λ) * max(sim(d, s)) for s in selected.
-    Higher lambda favors relevance; lower favors diversity.
-    """
-    n = len(vectors)
-    if n <= top_k:
-        return list(range(n))
-
-    sim_to_query = cosine_similarity(query_emb, vectors)[0]
-    sim_matrix = cosine_similarity(vectors)
-
-    selected: List[int] = []
-    remaining = set(range(n))
-
-    for _ in range(top_k):
-        if not remaining:
-            break
-
-        best_score = float("-inf")
-        best_idx = -1
-
-        for idx in remaining:
-            relevance = sim_to_query[idx]
-            if not selected:
-                mmr_score = relevance
-            else:
-                max_sim_to_selected = max(sim_matrix[idx, s] for s in selected)
-                mmr_score = lambda_param * relevance - (1 - lambda_param) * max_sim_to_selected
-
-            if mmr_score > best_score:
-                best_score = mmr_score
-                best_idx = idx
-
-        if best_idx >= 0:
-            selected.append(best_idx)
-            remaining.discard(best_idx)
-
-    return selected
-
-
-def _expand_chunk_neighbors(
-    selected: List[Tuple[str, Dict[str, Any]]],
-    all_payloads: List[Dict[str, Any]],
-) -> List[Tuple[str, Dict[str, Any]]]:
-    """
-    Expand each selected chunk with ±1 neighbors from the same paper.
-    Preserves selection order; neighbors are inserted before/after their seed chunk.
-    """
-    if not selected or not all_payloads:
-        return selected
-
-    lookup: Dict[Tuple[str, int], Tuple[str, Dict[str, Any]]] = {}
-    for i, p in enumerate(all_payloads):
-        if not p:
-            continue
-        paper_id = p.get("paper_id", "")
-        position = p.get("position", 0)
-        chunk_text = p.get("chunk_text", "")
-        lookup[(paper_id, position)] = (chunk_text, p)
-
-    expanded: List[Tuple[str, Dict[str, Any]]] = []
-    seen: set[Tuple[str, int]] = set()
-
-    for chunk_text, payload in selected:
-        paper_id = payload.get("paper_id", "")
-        pos = payload.get("position", 0)
-
-        for neighbor_pos in (pos - 1, pos, pos + 1):
-            key = (paper_id, neighbor_pos)
-            if key in seen:
-                continue
-            if key in lookup:
-                seen.add(key)
-                expanded.append(lookup[key])
-
-    return expanded
-
-
-def retrieve_chunks_with_metadata(
-    storage: RAGStorage,
-    embedder: PaperEmbedder,
-    query: str,
-    strategy: ChunkingStrategy,
-    top_k: int = 8,
-    use_mmr: bool = True,
-    mmr_lambda: float = 0.7,
-    expand_neighbors: bool = True,
-) -> List[Tuple[str, Dict[str, Any]]]:
-    """
-    Retrieve top-k chunks with metadata (chunk_text, payload).
-    Returns list of (chunk_text, payload) where payload has paper_id, title, section.
-
-    Args:
-        use_mmr: If True, use MMR for diverse retrieval.
-        mmr_lambda: MMR balance (0.7 = favor relevance, 0.3 = favor diversity).
-        expand_neighbors: If True, include ±1 neighboring chunks from same paper.
-    """
-    try:
-        vectors, payloads = storage.fetch_embeddings(strategy.value)
-
-        if not vectors or not payloads:
-            return []
-
-        query_emb = embedder.embed_texts([query])
-
-        if isinstance(vectors[0], list):
-            vectors = np.array(vectors)
-
-        if use_mmr:
-            top_indices = _mmr_select(
-                vectors, query_emb, payloads, top_k=top_k, lambda_param=mmr_lambda
-            )
-        else:
-            similarities = cosine_similarity(query_emb, vectors)[0]
-            top_indices = np.argsort(similarities)[::-1][:top_k].tolist()
-
-        result: List[Tuple[str, Dict[str, Any]]] = []
-        for i in top_indices:
-            payload = payloads[i] or {}
-            chunk_text = payload.get("chunk_text", "")
-            result.append((chunk_text, payload))
-
-        if expand_neighbors:
-            result = _expand_chunk_neighbors(result, payloads)
-
-        return result
-
-    except Exception as e:
-        print(f"Error retrieving chunks: {e}")
-        import traceback
-
-        traceback.print_exc()
-        return []
+from src.chunk_retrieval import retrieve_chunks_with_metadata
+from src.rag_pipeline import ALL_STRATEGIES, format_strategy_label, topics_to_search_query
+from src.rag_constants import (
+    ABSTRACT_FILTER_TOP_K,
+    ARXIV_SEARCH_MAX_RESULTS,
+    RETRIEVAL_CHUNK_TOP_K,
+)
 
 
 def get_sources_from_chunks(
-    chunks_with_meta: List[Tuple[str, Dict[str, Any]]],
+    chunks_with_meta: List[tuple[str, Dict[str, Any]]],
 ) -> List[Dict[str, str]]:
     """
     Extract unique papers from chunks (by paper_id).
@@ -193,32 +54,13 @@ def get_sources_from_chunks(
     return sources
 
 
-ALL_STRATEGIES = [
-    ChunkingStrategy.STRUCTURE_AWARE_OVERLAP,
-    ChunkingStrategy.SEMANTIC_PARAGRAPH_GROUPING,
-    ChunkingStrategy.FIXED_WINDOW_OVERLAP,
-    ChunkingStrategy.SECTION_LEVEL_CHUNKING,
-]
-
-
-def _format_strategy_label(strategy: ChunkingStrategy) -> str:
-    """Human-readable label for a chunking strategy."""
-    labels = {
-        ChunkingStrategy.STRUCTURE_AWARE_OVERLAP: "Structure-Aware Overlap",
-        ChunkingStrategy.SEMANTIC_PARAGRAPH_GROUPING: "Semantic Paragraph Grouping",
-        ChunkingStrategy.FIXED_WINDOW_OVERLAP: "Fixed Window Overlap",
-        ChunkingStrategy.SECTION_LEVEL_CHUNKING: "Section-Level Chunking",
-    }
-    return labels.get(strategy, strategy.value)
-
-
 def _empty_results(message: str) -> Dict[str, Any]:
     """Return results list with one fallback entry when pipeline fails early."""
     return {
         "results": [
             {
                 "strategy": ChunkingStrategy.STRUCTURE_AWARE_OVERLAP.value,
-                "strategy_label": _format_strategy_label(ChunkingStrategy.STRUCTURE_AWARE_OVERLAP),
+                "strategy_label": format_strategy_label(ChunkingStrategy.STRUCTURE_AWARE_OVERLAP),
                 "answer": message,
                 "sources": [],
             }
@@ -253,33 +95,30 @@ class RAGService:
         self.logger.log_step(0, "Starting RAG pipeline", query=query[:80], topics=topics[:80])
 
         # 1. Search arXiv using topics (comma-separated; multi-word terms quoted for phrase search)
-        terms = [t.strip() for t in topics.split(",") if t.strip()]
-        search_terms = " ".join(
-            f'"{term}"' if " " in term else term for term in terms
-        )
-        self.logger.log_step(1, "Search arXiv", max_results=20)
-        papers = self.retriever.search(search_terms, max_results=20)
+        search_terms = topics_to_search_query(topics)
+        self.logger.log_step(1, "Search arXiv", max_results=ARXIV_SEARCH_MAX_RESULTS)
+        papers = self.retriever.search(search_terms, max_results=ARXIV_SEARCH_MAX_RESULTS)
         if not papers:
             self.logger.log_step(1, "Search arXiv", found=0)
-            return self._empty_results("No papers found for this query.")
+            return _empty_results("No papers found for this query.")
         self.logger.log_step(1, "Search arXiv", found=len(papers))
 
-        # 2. Filter by abstract cosine similarity to query (top 5)
-        self.logger.log_step(2, "Filter by abstract similarity", top_k=5)
+        # 2. Filter by abstract cosine similarity to query
+        self.logger.log_step(2, "Filter by abstract similarity", top_k=ABSTRACT_FILTER_TOP_K)
         top_papers = self.retriever.filter_by_abstract_similarity(
-            query, papers, self.embedder, top_k=5
+            query, papers, self.embedder, top_k=ABSTRACT_FILTER_TOP_K
         )
         if not top_papers:
             self.logger.log_step(2, "Filter by abstract similarity", kept=0)
-            return self._empty_results("No relevant papers after filtering.")
+            return _empty_results("No relevant papers after filtering.")
         self.logger.log_step(2, "Filter by abstract similarity", kept=len(top_papers))
 
-        # 3. Download top 5
-        self.logger.log_step(3, "Download top papers", k=5)
-        paper_data_list = self.retriever.download_top_k(top_papers, k=5)
+        # 3. Download filtered papers
+        self.logger.log_step(3, "Download top papers", k=ABSTRACT_FILTER_TOP_K)
+        paper_data_list = self.retriever.download_top_k(top_papers, k=ABSTRACT_FILTER_TOP_K)
         if not paper_data_list:
             self.logger.log_step(3, "Download top papers", downloaded=0)
-            return self._empty_results("Failed to download papers.")
+            return _empty_results("Failed to download papers.")
         self.logger.log_step(3, "Download top papers", downloaded=len(paper_data_list))
 
         # 4. Clear and process papers with ALL chunking strategies
@@ -305,13 +144,13 @@ class RAGService:
                 self.embedder,
                 query,
                 strategy,
-                top_k=8,
+                top_k=RETRIEVAL_CHUNK_TOP_K,
             )
 
             if not chunks_with_meta:
                 results.append({
                     "strategy": strategy.value,
-                    "strategy_label": _format_strategy_label(strategy),
+                    "strategy_label": format_strategy_label(strategy),
                     "answer": "No relevant chunks found.",
                     "sources": [],
                 })
@@ -330,7 +169,7 @@ class RAGService:
             sources = get_sources_from_chunks(chunks_for_llm)
             strategy_result: Dict[str, Any] = {
                 "strategy": strategy.value,
-                "strategy_label": _format_strategy_label(strategy),
+                "strategy_label": format_strategy_label(strategy),
                 "answer": answer,
                 "sources": sources,
             }

@@ -1,0 +1,643 @@
+{
+  "snapshot_id": "v1",
+  "created_utc": "2026-04-21T17:57:25.547335+00:00",
+  "arxiv_search_max_results": 20,
+  "abstract_filter_top_k": 6,
+  "queries": [
+    {
+      "id": "ex_001",
+      "topics": "vector search, embeddings",
+      "question": "Why are embeddings used in dense retrieval instead of keyword matching?",
+      "paper_ids": [
+        "2308.14963",
+        "2509.05750",
+        "1801.04815",
+        "1809.09924",
+        "2603.09347",
+        "2602.15547"
+      ]
+    },
+    {
+      "id": "ex_002",
+      "topics": "retrieval augmented generation, embeddings",
+      "question": "Why are embeddings crucial for dense retrieval in RAG systems?",
+      "paper_ids": [
+        "2406.13249",
+        "2502.00306",
+        "2407.08275",
+        "2601.05264",
+        "2412.05838",
+        "2401.11246"
+      ]
+    },
+    {
+      "id": "ex_003",
+      "topics": "retrieval augmented generation, hybrid search",
+      "question": "What problem does hybrid retrieval solve compared to pure dense retrieval?",
+      "paper_ids": [
+        "2409.13707",
+        "2406.13249",
+        "2502.00306",
+        "2411.08891",
+        "2411.16133",
+        "2412.05838"
+      ]
+    },
+    {
+      "id": "ex_004",
+      "topics": "retrieval augmented generation, latency",
+      "question": "How does retrieval impact latency in RAG systems?",
+      "paper_ids": [
+        "2412.05838",
+        "2406.13249",
+        "2502.00306",
+        "2601.05264",
+        "2408.02854",
+        "2411.16133"
+      ]
+    },
+    {
+      "id": "ex_005",
+      "topics": "retrieval augmented generation, hallucination",
+      "question": "How does retrieval reduce hallucination in large language models?",
+      "paper_ids": [
+        "2501.09292",
+        "2404.08189",
+        "2305.06983",
+        "2410.11414",
+        "2508.03553",
+        "2503.16581"
+      ]
+    },
+    {
+      "id": "ex_006",
+      "topics": "retrieval augmented generation, re-ranking",
+      "question": "Why is re-ranking useful after initial retrieval in RAG pipelines?",
+      "paper_ids": [
+        "2502.02464",
+        "2406.13249",
+        "2408.02854",
+        "2502.00306",
+        "2407.03627",
+        "2411.16133"
+      ]
+    },
+    {
+      "id": "ex_007",
+      "topics": "supervised learning, overfitting",
+      "question": "What causes overfitting in supervised learning models?",
+      "paper_ids": [
+        "1710.04881",
+        "2112.05340",
+        "2311.16361",
+        "2008.10312",
+        "1912.10364",
+        "1909.11119"
+      ]
+    },
+    {
+      "id": "ex_008",
+      "topics": "supervised learning, regularization",
+      "question": "How does regularization help prevent overfitting?",
+      "paper_ids": [
+        "2201.06247",
+        "1903.03825",
+        "1912.10364",
+        "1808.06088",
+        "2112.05340",
+        "2211.16030"
+      ]
+    },
+    {
+      "id": "ex_009",
+      "topics": "supervised learning, loss functions",
+      "question": "Why are loss functions important in training supervised models?",
+      "paper_ids": [
+        "2307.02694",
+        "2309.02250",
+        "1707.02198",
+        "2602.06858",
+        "2404.18101",
+        "2112.05340"
+      ]
+    },
+    {
+      "id": "ex_010",
+      "topics": "supervised learning, generalization",
+      "question": "What does it mean for a model to generalize well?",
+      "paper_ids": [
+        "1912.10364",
+        "2211.16030",
+        "1905.06484",
+        "2008.10312",
+        "1903.03825",
+        "2311.16361"
+      ]
+    },
+    {
+      "id": "ex_011",
+      "topics": "supervised learning, feature engineering",
+      "question": "Why is feature engineering important in classical machine learning?",
+      "paper_ids": [
+        "2009.02557",
+        "1912.10364",
+        "2207.08187",
+        "2603.29979",
+        "2111.10794",
+        "1909.11119"
+      ]
+    },
+    {
+      "id": "ex_012",
+      "topics": "unsupervised learning, clustering",
+      "question": "What is the goal of clustering in unsupervised learning?",
+      "paper_ids": [
+        "1904.03259",
+        "1612.09030",
+        "1810.02334",
+        "2012.07399",
+        "2112.13680",
+        "2501.07729"
+      ]
+    },
+    {
+      "id": "ex_013",
+      "topics": "unsupervised learning, dimensionality reduction",
+      "question": "Why is dimensionality reduction useful before clustering?",
+      "paper_ids": [
+        "1710.04484",
+        "2403.00777",
+        "2504.17601",
+        "1002.1156",
+        "1801.09390",
+        "2406.17316"
+      ]
+    },
+    {
+      "id": "ex_014",
+      "topics": "unsupervised learning, anomaly detection",
+      "question": "How is anomaly detection performed without labeled data?",
+      "paper_ids": [
+        "2105.07346",
+        "1607.05974",
+        "2406.16308",
+        "1610.06761",
+        "2509.09030",
+        "2202.07787"
+      ]
+    },
+    {
+      "id": "ex_015",
+      "topics": "unsupervised learning, autoencoders",
+      "question": "How do autoencoders learn useful representations without labels?",
+      "paper_ids": [
+        "2501.07729",
+        "2506.10094",
+        "1904.03259",
+        "1411.7783",
+        "1810.02334",
+        "1903.07303"
+      ]
+    },
+    {
+      "id": "ex_016",
+      "topics": "unsupervised learning, latent space",
+      "question": "What is the role of latent space in unsupervised models?",
+      "paper_ids": [
+        "1607.00067",
+        "1809.03627",
+        "2012.07399",
+        "1904.13052",
+        "2004.07543",
+        "2209.11233"
+      ]
+    },
+    {
+      "id": "ex_017",
+      "topics": "reinforcement learning, exploration exploitation",
+      "question": "What is the exploration-exploitation trade-off in reinforcement learning?",
+      "paper_ids": [
+        "2112.01195",
+        "2307.16348",
+        "2306.10216",
+        "2506.15446",
+        "2602.12375",
+        "1911.09560"
+      ]
+    },
+    {
+      "id": "ex_018",
+      "topics": "reinforcement learning, reward function",
+      "question": "Why is reward design critical in reinforcement learning?",
+      "paper_ids": [
+        "2307.16348",
+        "2409.18051",
+        "2507.02910",
+        "1901.09837",
+        "2211.03994",
+        "2602.12375"
+      ]
+    },
+    {
+      "id": "ex_019",
+      "topics": "reinforcement learning, policy gradients",
+      "question": "How do policy gradient methods differ from value-based methods?",
+      "paper_ids": [
+        "2209.01820",
+        "1712.00006",
+        "1801.03326",
+        "1808.04096",
+        "2602.12375",
+        "1809.09501"
+      ]
+    },
+    {
+      "id": "ex_020",
+      "topics": "reinforcement learning, q learning",
+      "question": "What is the key idea behind Q-learning?",
+      "paper_ids": [
+        "2307.16348",
+        "2406.04896",
+        "1906.12350",
+        "2012.09092",
+        "2306.10216",
+        "1911.09560"
+      ]
+    },
+    {
+      "id": "ex_021",
+      "topics": "reinforcement learning, environment",
+      "question": "How does the environment influence learning in reinforcement learning?",
+      "paper_ids": [
+        "2307.16348",
+        "2306.10216",
+        "2112.01195",
+        "2506.15446",
+        "1910.04376",
+        "2507.02910"
+      ]
+    },
+    {
+      "id": "ex_022",
+      "topics": "deep learning, neural networks",
+      "question": "Why are neural networks effective for complex pattern recognition?",
+      "paper_ids": [
+        "2306.14753",
+        "1807.02477",
+        "2001.10696",
+        "2105.04026",
+        "1906.10015",
+        "2004.14942"
+      ]
+    },
+    {
+      "id": "ex_023",
+      "topics": "deep learning, backpropagation",
+      "question": "How does backpropagation update neural network weights?",
+      "paper_ids": [
+        "2006.12878",
+        "2011.08895",
+        "2105.04026",
+        "2206.14373",
+        "2012.06373",
+        "1710.05468"
+      ]
+    },
+    {
+      "id": "ex_024",
+      "topics": "deep learning, activation functions",
+      "question": "Why are nonlinear activation functions necessary in deep networks?",
+      "paper_ids": [
+        "2101.04844",
+        "2105.04026",
+        "1907.10900",
+        "1710.05468",
+        "1804.11237",
+        "1705.03921"
+      ]
+    },
+    {
+      "id": "ex_025",
+      "topics": "deep learning, optimization",
+      "question": "What challenges arise when optimizing deep neural networks?",
+      "paper_ids": [
+        "1705.03071",
+        "2105.04026",
+        "1710.05468",
+        "2602.07145",
+        "2210.00973"
+      ]
+    },
+    {
+      "id": "ex_026",
+      "topics": "deep learning, gradient descent",
+      "question": "What is the role of gradient descent in training neural networks?",
+      "paper_ids": [
+        "1903.03614",
+        "2306.16361",
+        "2205.15142",
+        "2311.15051",
+        "1911.05402",
+        "2302.01952"
+      ]
+    },
+    {
+      "id": "ex_027",
+      "topics": "transformers, attention mechanism",
+      "question": "What problem does the attention mechanism solve in transformers?",
+      "paper_ids": [
+        "2410.15578",
+        "2604.00965",
+        "2103.05103",
+        "2310.10375",
+        "2512.03377",
+        "2506.22084"
+      ]
+    },
+    {
+      "id": "ex_028",
+      "topics": "transformers, positional encoding",
+      "question": "Why do transformers require positional encoding?",
+      "paper_ids": [
+        "2405.09061",
+        "2502.12370",
+        "2410.12413",
+        "2512.19323",
+        "2402.00236",
+        "2401.09686"
+      ]
+    },
+    {
+      "id": "ex_029",
+      "topics": "transformers, self attention",
+      "question": "How does self-attention capture relationships between tokens?",
+      "paper_ids": [
+        "2511.13780",
+        "2011.04906",
+        "2506.22084",
+        "2312.04234",
+        "2602.11534",
+        "2511.11553"
+      ]
+    },
+    {
+      "id": "ex_030",
+      "topics": "transformers, scaling laws",
+      "question": "What are scaling laws in large language models?",
+      "paper_ids": [
+        "2510.24626",
+        "2402.04177",
+        "2412.07942",
+        "2411.06646",
+        "2408.11029",
+        "2411.17470"
+      ]
+    },
+    {
+      "id": "ex_031",
+      "topics": "transformers, fine tuning",
+      "question": "Why is fine-tuning important for adapting pretrained models?",
+      "paper_ids": [
+        "2602.08239",
+        "2102.03983",
+        "2403.00946",
+        "2004.10190",
+        "2408.07888",
+        "2604.12406"
+      ]
+    },
+    {
+      "id": "ex_032",
+      "topics": "agents, llm agents",
+      "question": "What defines an agent in the context of LLM-based systems?",
+      "paper_ids": [
+        "2504.04485",
+        "2503.11733",
+        "2604.08224",
+        "2505.17648",
+        "2412.14470",
+        "2602.16901"
+      ]
+    },
+    {
+      "id": "ex_033",
+      "topics": "agents, planning",
+      "question": "Why is planning important for autonomous agents?",
+      "paper_ids": [
+        "2110.02480",
+        "2307.13549",
+        "2011.01774",
+        "2302.09250",
+        "2412.20505",
+        "2201.02254"
+      ]
+    },
+    {
+      "id": "ex_034",
+      "topics": "agents, tool use",
+      "question": "How do agents use external tools to extend their capabilities?",
+      "paper_ids": [
+        "2604.03465",
+        "2604.00835",
+        "2309.07870",
+        "1909.07528",
+        "2506.18783",
+        "2508.18669"
+      ]
+    },
+    {
+      "id": "ex_035",
+      "topics": "agents, memory",
+      "question": "What role does memory play in agent-based systems?",
+      "paper_ids": [
+        "2603.15658",
+        "2603.15642",
+        "2604.08224",
+        "2510.22732",
+        "2603.17787",
+        "2309.07870"
+      ]
+    },
+    {
+      "id": "ex_036",
+      "topics": "agents, reasoning",
+      "question": "How do agents perform multi-step reasoning tasks?",
+      "paper_ids": [
+        "2601.12538",
+        "2506.18783",
+        "2305.09349",
+        "2603.02788",
+        "2412.07977",
+        "2112.03763"
+      ]
+    },
+    {
+      "id": "ex_037",
+      "topics": "evaluation, machine learning",
+      "question": "Why is evaluation critical in machine learning systems?",
+      "paper_ids": [
+        "2201.12150",
+        "2404.12511",
+        "1907.01463",
+        "2304.02381",
+        "2108.08712",
+        "2303.15563"
+      ]
+    },
+    {
+      "id": "ex_038",
+      "topics": "evaluation, metrics",
+      "question": "What makes a good evaluation metric for machine learning?",
+      "paper_ids": [
+        "2406.12655",
+        "2504.20900",
+        "2405.07875",
+        "1810.12368",
+        "2408.12398",
+        "2009.07736"
+      ]
+    },
+    {
+      "id": "ex_039",
+      "topics": "evaluation, cross validation",
+      "question": "How does cross-validation improve model evaluation?",
+      "paper_ids": [
+        "1905.10432",
+        "2405.15332",
+        "0803.2963",
+        "0110036",
+        "2001.11111",
+        "2507.22299"
+      ]
+    },
+    {
+      "id": "ex_040",
+      "topics": "evaluation, bias variance",
+      "question": "What is the bias-variance trade-off?",
+      "paper_ids": [
+        "1912.08286",
+        "2202.04167",
+        "0810.0879",
+        "1509.09088",
+        "2105.09825",
+        "2602.05656"
+      ]
+    },
+    {
+      "id": "ex_041",
+      "topics": "evaluation, benchmarking",
+      "question": "Why are benchmarks important in machine learning research?",
+      "paper_ids": [
+        "2511.01365",
+        "2601.21070",
+        "2003.00982",
+        "2206.10848",
+        "2103.16596",
+        "1801.05075"
+      ]
+    },
+    {
+      "id": "ex_042",
+      "topics": "optimization, machine learning",
+      "question": "Why is optimization challenging in high-dimensional spaces?",
+      "paper_ids": [
+        "1405.4980",
+        "2007.15745",
+        "1411.6725",
+        "2410.22854",
+        "1906.01101",
+        "2304.02381"
+      ]
+    },
+    {
+      "id": "ex_043",
+      "topics": "optimization, stochastic gradient descent",
+      "question": "What advantages does stochastic gradient descent provide?",
+      "paper_ids": [
+        "1810.00553",
+        "2102.01302",
+        "2308.06775",
+        "2106.06753",
+        "2503.02155"
+      ]
+    },
+    {
+      "id": "ex_044",
+      "topics": "optimization, convex optimization",
+      "question": "Why are convex problems easier to optimize?",
+      "paper_ids": [
+        "2308.02020",
+        "0911.1182",
+        "1212.4701",
+        "2211.15604",
+        "1605.08712",
+        "1806.06373"
+      ]
+    },
+    {
+      "id": "ex_045",
+      "topics": "optimization, local minima",
+      "question": "What are local minima and why are they problematic?",
+      "paper_ids": [
+        "1911.01413",
+        "2303.03536",
+        "1712.06585",
+        "2111.15645",
+        "1109.1320",
+        "1808.06100"
+      ]
+    },
+    {
+      "id": "ex_046",
+      "topics": "optimization, learning rate",
+      "question": "How does the learning rate affect training stability?",
+      "paper_ids": [
+        "1510.04609",
+        "2310.07831",
+        "2506.15025",
+        "1810.13243",
+        "2111.15645",
+        "1109.1320"
+      ]
+    },
+    {
+      "id": "ex_047",
+      "topics": "rag, chunking, retrieval",
+      "question": "How does chunk size affect retrieval quality in RAG systems?",
+      "paper_ids": [
+        "2504.19754",
+        "2602.22225",
+        "2603.25333",
+        "2411.00744",
+        "2404.07220",
+        "2106.11517"
+      ]
+    },
+    {
+      "id": "ex_048",
+      "topics": "rag, hybrid retrieval, bm25",
+      "question": "Why combine BM25 with dense retrieval in RAG pipelines?",
+      "paper_ids": [
+        "2604.01733",
+        "2106.11517",
+        "2503.23013",
+        "2510.25518",
+        "2401.15391",
+        "2504.01346"
+      ]
+    },
+    {
+      "id": "ex_049",
+      "topics": "rag, embeddings, similarity",
+      "question": "How does embedding similarity influence retrieval relevance?",
+      "paper_ids": [
+        "2502.14620",
+        "2309.12871",
+        "2506.09781",
+        "1603.07695",
+        "2401.15391",
+        "2106.11517"
+      ]
+    }
+  ]
+}

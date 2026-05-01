@@ -1,0 +1,251 @@
+{
+  "dataset": "src\\evaluation\\dataset.template.jsonl",
+  "snapshot_id": "v1",
+  "created_utc": "2026-05-01T09:02:03.550169+00:00",
+  "phase": "all",
+  "phase1": [
+    {
+      "config": {
+        "chunking_strategy": "STRUCTURE_AWARE_OVERLAP",
+        "top_k": 8,
+        "retrieval_type": "dense",
+        "re_ranking": false,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.8775510204081632,
+        "precision_at_k": 0.30612244897959184,
+        "mrr": 0.6510689990281827
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "SEMANTIC_PARAGRAPH_GROUPING",
+        "top_k": 8,
+        "retrieval_type": "dense",
+        "re_ranking": false,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.6530612244897959,
+        "precision_at_k": 0.1556122448979592,
+        "mrr": 0.3546161321671526
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 8,
+        "retrieval_type": "dense",
+        "re_ranking": false,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.9387755102040817,
+        "precision_at_k": 0.4362244897959184,
+        "mrr": 0.7474732750242954
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "SECTION_LEVEL_CHUNKING",
+        "top_k": 8,
+        "retrieval_type": "dense",
+        "re_ranking": false,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.9183673469387755,
+        "precision_at_k": 0.34438775510204084,
+        "mrr": 0.5930515063168125
+      }
+    }
+  ],
+  "phase1_winner": "FIXED_WINDOW_OVERLAP",
+  "phase2": [
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 3,
+        "retrieval_type": "dense",
+        "re_ranking": false,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.8571428571428571,
+        "precision_at_k": 0.5170068027210885,
+        "mrr": 0.7312925170068028
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 3,
+        "retrieval_type": "dense",
+        "re_ranking": true,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.7959183673469388,
+        "precision_at_k": 0.5918367346938775,
+        "mrr": 0.727891156462585
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 3,
+        "retrieval_type": "hybrid",
+        "re_ranking": false,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.7551020408163265,
+        "precision_at_k": 0.5374149659863945,
+        "mrr": 0.629251700680272
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 3,
+        "retrieval_type": "hybrid",
+        "re_ranking": true,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.7755102040816326,
+        "precision_at_k": 0.5578231292517006,
+        "mrr": 0.6836734693877551
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 5,
+        "retrieval_type": "dense",
+        "re_ranking": false,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.9183673469387755,
+        "precision_at_k": 0.4857142857142857,
+        "mrr": 0.7445578231292517
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 5,
+        "retrieval_type": "dense",
+        "re_ranking": true,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.8571428571428571,
+        "precision_at_k": 0.5428571428571429,
+        "mrr": 0.7149659863945578
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 5,
+        "retrieval_type": "hybrid",
+        "re_ranking": false,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.7755102040816326,
+        "precision_at_k": 0.5265306122448979,
+        "mrr": 0.6333333333333333
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 5,
+        "retrieval_type": "hybrid",
+        "re_ranking": true,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.8367346938775511,
+        "precision_at_k": 0.5224489795918368,
+        "mrr": 0.6962585034013605
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 10,
+        "retrieval_type": "dense",
+        "re_ranking": false,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.9591836734693877,
+        "precision_at_k": 0.4020408163265306,
+        "mrr": 0.749514091350826
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 10,
+        "retrieval_type": "dense",
+        "re_ranking": true,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.9387755102040817,
+        "precision_at_k": 0.5306122448979592,
+        "mrr": 0.7225542597991578
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 10,
+        "retrieval_type": "hybrid",
+        "re_ranking": false,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.8979591836734694,
+        "precision_at_k": 0.5081632653061224,
+        "mrr": 0.6522837706511176
+      }
+    },
+    {
+      "config": {
+        "chunking_strategy": "FIXED_WINDOW_OVERLAP",
+        "top_k": 10,
+        "retrieval_type": "hybrid",
+        "re_ranking": true,
+        "use_mmr": true,
+        "expand_neighbors": false
+      },
+      "metrics": {
+        "recall_at_k": 0.9387755102040817,
+        "precision_at_k": 0.5040816326530612,
+        "mrr": 0.7083819241982507
+      }
+    }
+  ]
+}
