@@ -33,6 +33,7 @@ A Retrieval-Augmented Generation (RAG) system for querying arXiv papers. Enter t
 ### Prerequisites
 
 - Python 3.8+
+- Node.js 20+ (for the Next.js frontend)
 - Docker and Docker Compose
 
 ### 1. Install Dependencies
@@ -43,7 +44,15 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+### 2. Install Frontend Dependencies
+
+```powershell
+cd frontend
+npm install
+cd ..
+```
+
+### 3. Configure Environment
 
 Create `.env` in the project root:
 
@@ -55,10 +64,18 @@ LLM_BASE_URL=https://api.deepseek.com
 LLM_API_KEY=your_deepseek_api_key_here
 ```
 
-### 3. Start Infrastructure
+Optional (only if your API is not running on `http://localhost:8000`):
+
+Create `frontend/.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+### 4. Start Infrastructure
 
 ```powershell
-docker-compose up -d
+docker compose up -d
 ```
 
 This starts:
@@ -85,6 +102,8 @@ npm run dev
 
 3. Open http://localhost:3000 for a ChatGPT-like chat interface.
 
+Note: each `/query` request rebuilds the temporary index from the newly fetched papers (across all chunking strategies), so data is intentionally not persisted between queries.
+
 **API**:
 
 - `POST /query` — Request body: `{"query": "...", "topics": "..."}`. Both fields required. Optional: `include_debug_context: true` to return retrieved chunks per strategy (for evaluation). Topics: comma-separated terms for arXiv search. Query: natural language question for embedding and retrieval. Returns `{"results": [{"strategy", "strategy_label", "answer", "sources"}, ...]}` with one entry per chunking strategy.
@@ -96,14 +115,14 @@ npm run dev
 - Web interface shows cited sources (paper title, arXiv link) when the LLM uses them
 - Paginated strategy view: navigate between answers from each chunking strategy (page 1/4, 2/4, …) to compare results
 
-## Evaluation (retrieval-only)
+### Evaluation (retrieval-only)
 
 Search and abstract-filter sizes are centralized in [`src/rag_constants.py`](src/rag_constants.py) (`ARXIV_SEARCH_MAX_RESULTS=20`, `ABSTRACT_FILTER_TOP_K=6`). Chunk retrieval defaults to `RETRIEVAL_CHUNK_TOP_K=8` with dense or hybrid (dense + BM25) retrieval and optional cross-encoder re-ranking.
 
 **1. Freeze a corpus** (full reset of snapshot + arXiv search/filter + PDF download to MinIO bucket `eval-frozen-corpus`):
 
 ```powershell
-docker-compose up -d
+docker compose up -d
 python -m src.evaluation.freeze_corpus --dataset src/evaluation/dataset.template.jsonl --snapshot-id v1
 ```
 
@@ -113,6 +132,6 @@ python -m src.evaluation.freeze_corpus --dataset src/evaluation/dataset.template
 python -m src.evaluation.run_retrieval_eval --dataset src/evaluation/dataset.template.jsonl --snapshot-id v1 --phase all --output-dir src/evaluation/output
 ```
 
-Output: `src/evaluation/output/retrieval_eval.json` with per-configuration `hit_at_k`, `precision_at_k`, and `mrr`.
+Output: `src/evaluation/output/retrieval_eval.json` with per-configuration `recall_at_k`, `precision_at_k`, and `mrr`.
 
 **Dataset format** (JSONL): `id` (optional), `topics`, `question`, `gold_passages` (optional, used by retrieval evaluation), `metadata` (optional). `gold_docs` from the dataset are ignored; gold docs come from the frozen snapshot mapping (`topics` + `question` → paper IDs).

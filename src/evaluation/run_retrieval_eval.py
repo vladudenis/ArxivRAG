@@ -127,7 +127,6 @@ def _run_queries_for_config(
     re_ranking: bool,
 ) -> dict[str, float]:
     recalls: list[float] = []
-    hits: list[float] = []
     precisions: list[float] = []
     mrrs: list[float] = []
 
@@ -151,13 +150,11 @@ def _run_queries_for_config(
             k=top_k,
         )
         recalls.append(m["recall_at_k"])
-        hits.append(m["hit_at_k"])
         precisions.append(m["precision_at_k"])
         mrrs.append(m["mrr"])
 
     return {
         "recall_at_k": _mean(recalls),
-        "hit_at_k": _mean(hits),
         "precision_at_k": _mean(precisions),
         "mrr": _mean(mrrs),
     }
@@ -207,7 +204,7 @@ def run_phase1(
     best = max(
         results,
         key=lambda r: (
-            r["metrics"]["hit_at_k"],
+            r["metrics"]["recall_at_k"],
             r["metrics"]["mrr"],
             r["metrics"]["precision_at_k"],
         ),

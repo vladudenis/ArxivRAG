@@ -45,12 +45,11 @@ def compute_retrieval_metrics_for_query(
     IR metrics on the first k retrieved chunks (list should be pre-truncated to k for scoring).
 
     recall_at_k: paper-level recall in top-k chunks = |retrieved_paper_ids ∩ gold_docs| / |gold_docs|
-    hit_at_k: 1.0 if at least one retrieved chunk in top-k is relevant, else 0.0
     precision_at_k: (# relevant in top-k) / k
     mrr: reciprocal rank of first relevant chunk, or 0.0
     """
     if k <= 0:
-        return {"recall_at_k": 0.0, "hit_at_k": 0.0, "precision_at_k": 0.0, "mrr": 0.0}
+        return {"recall_at_k": 0.0, "precision_at_k": 0.0, "mrr": 0.0}
 
     top = retrieved[:k]
     top_paper_ids = {
@@ -73,7 +72,6 @@ def compute_retrieval_metrics_for_query(
         )
 
     num_rel = sum(1 for r in rel_flags if r)
-    hit_at_k = 1.0 if num_rel > 0 else 0.0
     precision_at_k = num_rel / float(k)
 
     mrr = 0.0
@@ -84,7 +82,6 @@ def compute_retrieval_metrics_for_query(
 
     return {
         "recall_at_k": recall_at_k,
-        "hit_at_k": hit_at_k,
         "precision_at_k": precision_at_k,
         "mrr": mrr,
     }
