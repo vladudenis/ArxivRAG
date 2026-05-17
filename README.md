@@ -9,6 +9,15 @@ A Retrieval-Augmented Generation (RAG) system for querying arXiv papers. Enter t
 - **Multi-strategy chunking**: Each query returns answers from all four chunking strategies; the UI shows a paginated view (1/4, 2/4, …) to compare them.
 - **Storage**: MinIO for PDFs, Qdrant for embeddings and paper metadata.
 
+## Folder Structure
+
+- `src/` - Core Python backend logic for retrieval, chunking, embedding, storage, and pipeline orchestration.
+- `src/api/` - FastAPI application (`/query`, `/health`) and API-layer services/clients.
+- `src/evaluation/` - Retrieval-only benchmarking pipeline, dataset template, corpus freezing, manifests, metrics, and outputs.
+- `frontend/` - Next.js web UI (chat interface, topics input, source display, and API integration).
+- `docker-compose.yml` - Local infrastructure setup for MinIO and Qdrant.
+- `requirements.txt` - Python dependencies for the backend and evaluation pipeline.
+
 ## Chunking Strategies
 
 1. **STRUCTURE_AWARE_OVERLAP** (default, recommended)
@@ -52,7 +61,13 @@ npm install
 cd ..
 ```
 
-### 3. Configure Environment
+### 3. Copy Environment Template
+
+```powershell
+copy .env.example .env
+```
+
+### 4. Configure Environment
 
 Create `.env` in the project root:
 
@@ -72,7 +87,7 @@ Create `frontend/.env.local`:
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-### 4. Start Infrastructure
+### 5. Start Infrastructure
 
 ```powershell
 docker compose up -d
