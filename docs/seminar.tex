@@ -1,0 +1,173 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[preprint]{neurips_2024}
+\usepackage[a4paper,margin=1in]{geometry}  % Adjusts page layout
+\usepackage{graphicx}  % For including images
+\usepackage{amsmath, amssymb}  % For math symbols if needed
+\usepackage{hyperref}  % For hyperlinks
+\usepackage{natbib}  % For citations
+\usepackage{titlesec} % Heading format adjustments
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{url}
+% Numeric citations (sorted & compressed)
+\usepackage[numbers,sort&compress]{natbib}
+% Hyperlinks for citations (must be after natbib)
+\usepackage[colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue]{hyperref}
+\makeatletter
+\renewcommand{\@noticestring}{}
+\makeatother
+
+\bibliographystyle{unsrt}
+\bibliographystyle{plainurl}  % OR
+\bibliographystyle{IEEEtran}  % if you want a cleaner format
+
+% --- Title Info ---
+\title{Retrieval-Augmented Generation: Grounding Language Models in External Knowledge}
+\author{
+Raymond Denis Vladu \\
+Student ID: K12306746 \\
+Institute of Machine Learning, JKU Linz
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This paper provides a comprehensive analysis of the Retrieval-Augmented Generation (RAG) framework, a hybrid architecture that integrates parametric memory with a non-parametric, external knowledge source to enhance language generation. We detail RAG's core components, including a Dense Passage Retriever and a BART-based generator, and its two model variants that marginalize over retrieved documents. The framework is trained end-to-end without direct retrieval supervision, enabling more factual, specific, and updatable text generation. Empirical evaluation demonstrates RAG's state-of-the-art performance on diverse knowledge-intensive tasks. Furthermore, we explore the scaling of this paradigm through DeepMind's Retro model, which retrieves from trillions of tokens, validating retrieval-augmentation as a powerful and efficient alternative to simply scaling model parameters.
+\end{abstract}
+
+\section{Introduction}
+The pursuit of LLMs that can access and reason over vast amounts of knowledge is a central challenge in natural language processing. Traditional language models encode knowledge statically within their parameters during training, making them prone to hallucination, difficult to update, and limited by their fixed pre-training corpus. Conversely, retrieval-based models can access dynamic, external information but have traditionally been confined to extractive tasks like open-domain question answering, lacking the flexibility of free-form generation.
+
+The RAG framework, introduced by Lewis et al., represents a paradigm shift by unifying these two approaches into a single, end-to-end differentiable model \cite{lewis2020rag}. By treating retrieved documents as latent variables, RAG can learn to retrieve and utilize evidence from a large corpus (e.g., Wikipedia) to ground its generative outputs. This hybrid design offers a compelling solution to the limitations of purely parametric models, enabling more factual, specific, and updatable text generation.
+
+\section{Retrieval-Augmented Generation Framework}
+
+RAG synergistically combines parametric and non-parametric memory to enhance language generation with dynamically retrieved evidence \cite{lewis2020rag}. This approach has proven particularly powerful for knowledge-intensive tasks like open-domain question answering, as it allows models to access and cite information from an external corpus, such as Wikipedia, during the generation process.
+
+\subsection{Core Architecture}
+The RAG model integrates two core components:
+\begin{itemize}
+    \item \textbf{A Retriever} ($p_{\eta}(z|x)$), which, given an input $x$, returns a top-$K$ list of relevant text passages $z$ from a large document corpus. This constitutes the model's non-parametric memory.
+    \item \textbf{A Generator} ($p_{\theta}(y_i|x, z, y_{1:i-1})$), which produces the target sequence $y$ one token at a time, conditioned on the original input, a retrieved passage, and the prior context.
+\end{itemize}
+To facilitate end-to-end training, the retrieved document is treated as a latent variable. The framework defines two model variants that marginalize over this variable in different ways, offering a trade-off between consistency and flexibility.
+
+\subsection{Model Variants}
+\paragraph{RAG-Sequence Model}
+This model uses a single retrieved document to generate the entire output sequence. It marginalizes over the top-$K$ documents by calculating a weighted sum of the output probabilities from each document:
+\[
+p_{\text{RAG-Sequence}}(y|x) \approx \sum_{z \in \text{top-}K(p_{\eta}(\cdot|x))} p_{\eta}(z|x) \cdot \prod_{i}^{N} p_{\theta}(y_i|x, z, y_{1:i-1}).
+\]
+While this ensures a consistent context for the entire generation, it can be limiting if a single document does not contain all the necessary information.
+
+\paragraph{RAG-Token Model}
+This model can select a different document for each target token, allowing it to synthesize information from multiple sources within a single sequence. It marginalizes over documents at every generation step:
+\[
+p_{\text{RAG-Token}}(y|x) \approx \prod_{i}^{N} \sum_{z \in \text{top-}K(p_{\eta}(\cdot|x))} p_{\eta}(z|x) \cdot p_{\theta}(y_i|x, z, y_{1:i-1}).
+\]
+This often leads to more factually accurate and detailed outputs but involves a more complex marginalization process \cite{lewis2020rag}.
+
+\subsection{Retriever Implementation: Dense Passage Retrieval (DPR)}
+The retrieval component is based on DPR \cite{karpukhin2020dpr}, which uses a bi-encoder architecture:
+\begin{itemize}
+    \item A \textbf{Query Encoder} ($\text{BERT}_q$) maps the input $x$ to a dense vector $q(x)$.
+    \item A \textbf{Document Encoder} ($\text{BERT}_d$) maps each document $z$ to a dense vector $d(z)$.
+\end{itemize}
+The retrieval probability is $p_{\eta}(z|x) \propto \exp(d(z)^T q(x))$, and finding the top-$K$ documents is solved via Maximum Inner Product Search (MIPS). A pre-trained DPR model is used to initialize the retriever and build the document index, which is subsequently kept frozen \cite{lewis2020rag, karpukhin2020dpr}.
+
+\subsection{Generator Implementation: BART}
+The generator is implemented using BART-large \cite{lewis2019bart}, a pre-trained sequence-to-sequence transformer. The input $x$ and the retrieved document $z$ are concatenated to form the generator's input. BART provides the model's parametric memory, and its parameters are fine-tuned during training.
+
+\subsection{Training Procedure}
+RAG is trained end-to-end by minimizing the negative marginal log-likelihood $\sum_j -\log p(y_j | x_j)$ over a dataset of input-output pairs, without direct supervision on which document to retrieve. To maintain training efficiency, the document encoder ($\text{BERT}_d$) and the entire document index are kept fixed. Only the query encoder ($\text{BERT}_q$) and the BART generator parameters are updated, avoiding the computationally expensive index updates required by other systems like REALM \cite{lewis2020rag}.
+
+\subsection{Decoding Strategies}
+Different decoding procedures are required for the two variants at test time:
+\begin{itemize}
+    \item \textbf{RAG-Token:} Can be decoded with a standard beam search, as it defines a conventional per-token transition probability marginalized over documents.
+    \item \textbf{RAG-Sequence:} Requires a more complex procedure. Lewis et al. propose:
+    \begin{itemize}
+        \item \textbf{Thorough Decoding:} Runs a beam search for each top-$K$ document and performs additional forward passes to accurately estimate sequence probabilities. This is exact but computationally expensive.
+        \item \textbf{Fast Decoding:} An approximation that assumes $p_{\theta}(y|x, z) \approx 0$ for any sequence $y$ not generated in the beam search for document $z$. This is efficient but approximate.
+    \end{itemize}
+\end{itemize}
+
+\section{Experiments and Results}
+
+The RAG model was evaluated across a suite of knowledge-intensive tasks using a Wikipedia dump as its non-parametric knowledge source \cite{lewis2020rag}.
+
+\subsection{Open-Domain Question Answering}
+RAG achieved new state-of-the-art results on four standard QA datasets (Natural Questions, TriviaQA, WebQuestions, and CuratedTrec). It outperformed both parametric ("closed-book") models like T5 \cite{raffel2020t5} and retrieval-based ("open-book") models like DPR \cite{karpukhin2020dpr} and REALM \cite{guu2020realm}. Crucially, RAG demonstrated that neither an extractive reader nor a re-ranker is necessary for top performance. A significant finding was its ability to generate correct answers even when the text was not verbatim in any retrieved document (achieving 11.8\% accuracy in such cases on NQ).
+
+\subsection{Abstractive Question Answering}
+On the MS-MARCO NLG task, RAG significantly outperformed a strong BART baseline without using the provided gold passages. Its generations were qualitatively more factual and less prone to hallucination, nearly matching the performance of models that had access to gold evidence.
+
+\subsection{Jeopardy Question Generation}
+In this novel task, RAG-Token outperformed both BART and RAG-Sequence on the Q-BLEU metric. Human evaluators strongly preferred RAG generations, rating them as more factual (42.7\% for RAG vs. 7.1\% for BART) and more specific. Analysis showed RAG-Token's strength in combining information from multiple documents within a single sequence.
+
+\subsection{Fact Verification}
+On the FEVER fact-checking task, RAG achieved strong results competitive with complex, supervised pipeline systems, despite receiving no direct supervision on which evidence to retrieve. The retriever proved highly effective, with a gold evidence article present in the top 10 retrieved documents 90\% of the time.
+
+\subsection{Additional Results}
+\begin{itemize}
+    \item \textbf{Diversity:} RAG generated more diverse text than BART without special decoding techniques.
+    \item \textbf{Ablations:} End-to-end training of the retriever was crucial for performance. A dense retriever outperformed a BM25 baseline on all tasks except FEVER.
+    \item \textbf{Index Hot-Swapping:} Simply updating the document index (e.g., to a newer Wikipedia dump) allowed RAG to accurately reflect new information (e.g., changing world leaders), showcasing a key advantage over static parametric models.
+    \item \textbf{Effect of $K$:} Performance generally improved with the number of retrieved documents ($K$), with RAG-Sequence benefiting from a larger $K$ than RAG-Token.
+\end{itemize}
+
+\section{Scaling Retrieval-Augmentation: The Retro Approach}
+\label{sec:retro}
+
+The RAG framework demonstrated the profound impact of integrating retrieval with generation. A natural subsequent question, addressed by the DeepMind team in their work on the Retrieval-Enhanced Transformer (Retro) \cite{deepmind2022retro}, is how to effectively scale this paradigm to the largest language models and the largest possible corpora. While RAG retrieves from a curated, Wikipedia-scale corpus (∼20M passages), Retro pushes the boundaries by retrieving from a massive, multi-domain corpus encompassing trillions of tokens.
+
+\subsection{Architectural Innovations of Retro}
+
+Retro shares the core philosophy of RAG—augmenting a parametric generator with a non-parametric memory—but introduces key architectural modifications for efficiency and scalability at an unprecedented level.
+
+\begin{itemize}
+    \item \textbf{Chunked Cross-Attention:} Instead of concatenating a full retrieved document to the input, Retro processes the input in chunks. For each input chunk, it retrieves the nearest neighbors from a vast database. The subsequent chunk's computation then attends to these retrieved neighbors via a dedicated \textit{chunked cross-attention} mechanism within the decoder layers. This is more efficient than processing entire documents and allows for finer-grained integration of external information.
+    \item \textbf{Decoupled Database and Index:} Retro's database is built from a fixed snapshot of a large corpus (e.g., MassiveText). The embeddings for this database are pre-computed \textit{once} using the model's own encoder, and the index is built. This database remains completely frozen during training and inference. This decoupling is crucial for managing the computational load of dealing with trillions of tokens.
+    \item \textbf{Scaling to Trillions of Tokens:} The Retro paper scales the retrieval database to an unprecedented 2 trillion tokens, far beyond the 21 million Wikipedia chunks used in RAG. This allows the model to leverage a much broader and more diverse set of knowledge, potentially capturing more nuanced and rare information.
+\end{itemize}
+
+\subsection{Comparison to RAG}
+
+The Retro approach can be seen as a direct descendant and scaling of RAG, but with critical differences in implementation:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{p{0.4\linewidth}p{0.5\linewidth}}
+\hline
+\textbf{Retrieval-Augmented Generation (RAG)} & \textbf{Retrieval-Enhanced Transformer (Retro)} \\
+\hline
+Retrieves full documents/passages. & Retrieves neighbors for specific input \textit{chunks}. \\
+Integrates context by concatenation. & Integrates context via chunked cross-attention. \\
+Typically uses a frozen, pre-built index (e.g., via DPR). & Uses a frozen database indexed with its own frozen encoder. \\
+Scaled to tens of millions of passages (e.g., Wikipedia). & Scaled to trillions of tokens across a massive corpus. \\
+Retriever (query encoder) is fine-tuned end-to-end. & The entire retrieval path (encoder, database) is frozen; only the generator is updated. \\
+\hline
+\end{tabular}
+\caption{\label{tab:rag-vs-retro}Key architectural differences between RAG and Retro.}
+\end{table}
+
+\subsection{Implications and Results}
+
+The results are striking. They show that a 7.5 billion-parameter Retro model can outperform a much larger 175 billion-parameter GPT-3 model on certain knowledge-intensive tasks, demonstrating that retrieval can be a more compute-efficient path to performance than simply scaling parameters. Furthermore, they prove that this architecture can be efficiently trained at scale, with the frozen database preventing the massive computational overhead of continuously re-encoding the knowledge corpus during training.
+
+The Retro approach validates and extends the core thesis of RAG: that augmenting large parametric models with non-parametric memory is a powerful and scalable paradigm. It provides a blueprint for how to build the next generation of language models that are not only powerful but also more efficient, factual, and grounded in a vast, external knowledge base. It addresses a limitation of RAG by showing that the retrieval-augmented paradigm is not limited to a single corpus but can be scaled to encompass a significant fraction of the public internet, making the dream of a truly comprehensive retrieval-based assistant more plausible.
+
+\section{Conclusion and Outlook}
+The Retrieval-Augmented Generation framework and its scaled successor, Retro, represent a paradigm shift in the development of knowledge-intensive NLP systems. This paper has detailed the architecture of RAG, which elegantly combines a parametric generator with a non-parametric retriever to achieve state-of-the-art results across diverse tasks by dynamically grounding predictions in external evidence. Its key advantages—improved factuality, inherent updatability via index hot-swapping, and the ability to synthesize information—solve critical limitations of purely parametric models.
+
+The subsequent exploration of DeepMind's Retro model demonstrates the scalability and immense potential of this approach. By architecting for efficiency with chunked cross-attention and a frozen database, Retro successfully scaled the retrieval-augmented paradigm to trillions of tokens, showing that enhanced retrieval can be a more efficient path to performance than simply scaling model parameters.
+
+The future of this field lies in refining these hybrid architectures. Key research directions include overcoming the remaining challenges of computational overhead, developing methods for incremental index updates beyond static snapshots, and integrating multi-modal knowledge sources. The progression from RAG to Retro strongly suggests that the future of generative AI may not lie in ever-larger parametric models alone, but in flexible, efficient architectures that know when and how to retrieve information from vast, dynamic knowledge bases.
+
+\bibliography{references}
+
+\end{document}

@@ -147,6 +147,26 @@ python -m src.evaluation.freeze_corpus --dataset src/evaluation/dataset.template
 python -m src.evaluation.run_retrieval_eval --dataset src/evaluation/dataset.template.jsonl --snapshot-id v1 --phase all --output-dir src/evaluation/output
 ```
 
-Output: `src/evaluation/output/retrieval_eval.json` with per-configuration `recall_at_k`, `precision_at_k`, and `mrr`.
+Output: `src/evaluation/output/retrieval_eval.json`. Each configuration reports five metrics — `hit_at_k` (Success@k: ≥1 relevant chunk in top-k), `paper_coverage` (paper-level coverage = |retrieved papers ∩ gold| / |gold|), `precision_at_k`, `mrr`, and `average_precision` (aggregates to MAP) — plus `metrics_ci` (bootstrap 95% confidence intervals) and `per_query` scores (aligned to top-level `example_ids`). A `significance` block reports paired-bootstrap and Wilcoxon tests for pre-registered comparisons.
+
+Note on metrics: `hit_at_k` corresponds to the metric the practical report labelled "Recall@k". `paper_coverage` is a stricter paper-level recall that is structurally capped at `min(k, |gold|)/|gold|` (so it is best compared at `k ≥ |gold|`); `hit_at_k` and `average_precision` are the recommended headline metrics for cross-configuration comparison.
+
+**Graded relevance:** a chunk's grade is `1.0` if its paper ID is a gold document, otherwise its max cosine similarity to any gold passage (clipped to `[0,1]`). Binary relevance (used by `hit_at_k`, `precision_at_k`, `mrr`, `average_precision`) thresholds this grade at `PASSAGE_RELEVANCE_THRESHOLD`. Relevance is scored by a fixed **judge embedder** (`--judge-embedding-model`, default `google/embeddinggemma-300m`) so labels stay constant when the retrieval embedding model varies.
+
+**3. Compare embedding models (Phase 3, optional):** add `--embedding-models` to run a per-model sweep that re-indexes the frozen corpus with the Phase 1 winning chunker and the best Phase 2 retrieval config, scoring all models against the fixed judge embedder. Results are written under the `phase3` key.
+
+If you have **already** run Phases 1–2 (i.e. `retrieval_eval.json` exists), use `--phase 3` to run **only** the embedding comparison and merge it into the existing file — this skips re-computing Phases 1–2 (hours of work) and preserves their results. `--phase 3` requires `--winner-strategy` (and reuses the best Phase 2 config from the existing file, falling back to dense/top-k=10/no-rerank):
+
+```powershell
+python -m src.evaluation.run_retrieval_eval --dataset src/evaluation/dataset.template.jsonl --snapshot-id v1 --phase 3 --winner-strategy FIXED_WINDOW_OVERLAP --embedding-models "google/embeddinggemma-300m,BAAI/bge-small-en-v1.5,BAAI/bge-base-en-v1.5" --output-dir src/evaluation/output
+```
+
+To run everything in one pass instead (recomputes Phases 1–2), use `--phase all` with `--embedding-models`. Either way, each model triggers a full re-embed + re-index of the frozen corpus, so Phase 3 runtime scales with the number of models.
+
+**4. Generate LaTeX tables:** turn a results file into Overleaf-ready booktabs tables (Phase 1/2/3 + significance):
+
+```powershell
+python -m src.evaluation.make_tables --input src/evaluation/output/retrieval_eval.json --output src/evaluation/output/thesis_tables.tex
+```
 
 **Dataset format** (JSONL): `id` (optional), `topics`, `question`, `gold_passages` (optional, used by retrieval evaluation), `metadata` (optional). `gold_docs` from the dataset are ignored; gold docs come from the frozen snapshot mapping (`topics` + `question` → paper IDs).
